@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, os
-import utils, printout, print_indices
+import utils, printout, indices
 
 #=============================================================================
 def main():
@@ -42,19 +42,19 @@ def main():
 
     if not skip_indices:
 
-        indices = IofIndices()
+        my_indices = IofIndices()
 
         # print the indices
-        indices.Append( *print_indices.print_alphabetic_index(api, out_dir) )
-        indices.Append( *print_indices.print_logical_tree_index(api, out_dir, src_tree, packages) )
-        indices.Append( *print_indices.print_mostly_used_index(api, out_dir) )
+        my_indices.Append( *indices.print_alphabetic_index(api, out_dir) )
+        my_indices.Append( *indices.print_logical_tree_index(api, out_dir, src_tree, packages) )
+        my_indices.Append( *indices.print_mostly_used_index(api, out_dir) )
 
         # more alphabetic indices
-        indices.Append( *print_indices.print_alphabetic(modules_lists['__ALL__'], out_dir) )
-        indices.Append( *print_indices.print_alphabetic(modules_lists['__API__'], out_dir, 'DBCSR API') )
+        my_indices.Append( *indices.print_alphabetic(modules_lists['__ALL__'], out_dir) )
+        my_indices.Append( *indices.print_alphabetic(modules_lists['__API__'], out_dir, 'DBCSR API') )
 
         # general index
-        print_indices.print_general_index(out_dir, indices)
+        indices.print_general_index(out_dir, my_indices)
 
 #=============================================================================
 def lookup_imported_symbols(ast_dir, wanted_module, wanted_api):
