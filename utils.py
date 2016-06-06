@@ -29,9 +29,12 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
             for sym in names.difference(my_pubs):
                 my_sym_map[sym] = ':'.join(['__PRIV__', sym])
                 my_sym_cat[sym] = cat
+    else:
+        my_pubs = []
 
     # consider the USE statements
     uses_map = modules_symbols(ast['uses'])
+    umap = map_symbol_to_module(ast['uses'])
     for module, imported_syms in uses_map.iteritems():
 
         if module in external_modules:
@@ -53,9 +56,13 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
             my_sym_map.update(next_sym_map)
             my_sym_cat.update(next_sym_cat)
 
+    symbols_forwarded = process_forwarded(my_name, my_pubs, umap, my_sym_map, sym_lookup_table)
+
     sym_lookup_table[my_name] = {
         'symbols_map':my_sym_map,
         'symbols_cat':my_sym_cat,
+        'umap':umap,
+        'symbols_forwarded':symbols_forwarded
     }
 
 #=============================================================================
@@ -78,20 +85,40 @@ def get_sym_map(mod_name, mod_map, syms):
     return out_map, out_cat
 
 #=============================================================================
-def map_symbol_to_module(uses):
-    """ Convert the 'uses' ast key content (a list of dictionaries)
-        to a dictionary with:
-        - keys: internal symbol name
-        - values: strings of the form "owner_module:external_symbol_name"."""
-    d = []
-    for u in uses:
-        module = u['from']
-        if('only' in u):
-            symbols = u['only']
-            d.extend( zip(symbols.keys(), [':'.join([module, external_sym]) for external_sym in symbols.values()]) )
-    return(dict(d))
+def process_forwarded(mod_name, pubnames, umap, symmap, sym_lookup_table):
 
-#===============================================================================
+    fwd = {}
+    for sym in pubnames:
+
+        if not sym in external_symbols:
+            if(not sym in symmap):
+                raise Exception('MOD: "%s", SYM: "%s"'%(mod_name, sym))
+            m, s = symmap[sym].split(':',1)
+            if m != '__HERE__':
+
+                chain = trace_symbol(sym, umap, symmap, sym_lookup_table)
+                assert(chain[-1] == symmap[sym])
+                if len(chain)>1:
+                    fwd[sym] = chain
+
+    return fwd
+
+#=============================================================================
+def trace_symbol(sym, umap, symmap, sym_lookup_table):
+    assert(sym in umap)
+
+    usym = umap[sym]
+    chain = [usym]
+    if usym != symmap[sym]:
+        used_module, sym_therein = usym.split(':',1)
+
+        next_umap   = sym_lookup_table[used_module]['umap']
+        next_symmap = sym_lookup_table[used_module]['symbols_map']
+        chain.extend( trace_symbol(sym_therein, next_umap, next_symmap, sym_lookup_table) )
+
+    return chain
+
+#=============================================================================
 def modules_symbols(uses):
     """ Convert the 'uses' ast key content (a list of dictionaries)
         to a dictionary with:
@@ -112,6 +139,20 @@ def reverse_sym_map(symbols_map):
         module, external_sym = symbols_map[s].split(':')
         mmap.setdefault(module, {}).update({s:external_sym})
     return mmap
+
+#=============================================================================
+def map_symbol_to_module(uses):
+    """ Convert the 'uses' ast key content (a list of dictionaries)
+        to a dictionary with:
+        - keys: internal symbol name
+        - values: strings of the form "owner_module:external_symbol_name"."""
+    d = []
+    for u in uses:
+        module = u['from']
+        if('only' in u):
+            symbols = u['only']
+            d.extend( zip(symbols.keys(), [':'.join([module, external_sym]) for external_sym in symbols.values()]) )
+    return(dict(d))
 
 #===============================================================================
 def read_ast(fn_in, wanted=None, category=None, do_doxycheck=True):
@@ -223,25 +264,25 @@ from htmlentitydefs import entitydefs
 
 # create a subclass and override the handler methods
 class MyHTMLParser(HTMLParser):
- 
+
     def __init__(self, *args):
         self.last_opened_tag = None
         self.errors = []
         HTMLParser.__init__(self, *args)
- 
+
     def handle_starttag(self, tag, attrs):
         self.last_opened_tag = tag
         if( verbose() ):
             print "Warning: encountered a start tag '%s'!" % self.get_starttag_text()
             for a in attrs:
                 if a: print '\tAttribute:', a
- 
+
     def handle_endtag(self, tag):
         last_opened_tag = self.get_starttag_text()
         if(not last_opened_tag.startswith("<"+tag)):
             assert(last_opened_tag.startswith("<"+self.last_opened_tag))
             print "Warning: not closing the right tag! About to close '<%s>' while '%s' opened!" % (tag, last_opened_tag)
- 
+
     def handle_entityref(self, name):
        #if verbose(): print "Encountered an entity  :", name
         if(not name in entitydefs):
@@ -249,7 +290,7 @@ class MyHTMLParser(HTMLParser):
                 print "Error: found unknown entity! '%s'" % name
             row, col = self.getpos()
             self.errors.append((2, row, col))
- 
+
     def handle_data(self, data):
        #print "Encountered some data  :", data
         if('&' in data):
@@ -258,7 +299,7 @@ class MyHTMLParser(HTMLParser):
                 print "Something to be escaped: '%s'" % data
             row, col = self.getpos()
             self.errors.append((3, row, col))
- 
+
     def handle_charref(name):
         self.error('charref %r'%name)
     def handle_comment(name):

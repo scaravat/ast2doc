@@ -2,23 +2,28 @@
 # -*- coding: utf-8 -*-
 
 from os import path
-from printout import html_document_heading, filename, separator
 from mostly_used import l as mostly_used
+from makeHTML import newTag
+from render import filename, printout
 
 #=============================================================================
 def print_general_index(prefix, indices, fmt='html'):
     title = 'DBCSR API Documentation'
     indices_list = indices.l2sort
     if(fmt=='html'):
-        html, body = html_document_heading(title, hlevel=1, htext=title, hklass='index_title')
 
-        list_of_indices = body.ul()
+        heading = newTag('h1', content=title, attributes={"class":'index_title'})
+
+        items = []
         for i in indices_list:
-            list_of_indices.li.h3.a(getattr(indices, i), href='.'.join([i, fmt]))
+            link = newTag('a', content=getattr(indices, i), attributes={"href":'.'.join([i, fmt])})
+            head = newTag('h3', content=link)
+            item = newTag('li', content=head)
+            items.append(item)
+        list_of_indices = newTag('ul', content=items)
 
-        f = open( path.join( prefix, "index.html" ), 'w' )
-        f.write("<!DOCTYPE html>\n" + str(html) + '\n')
-        f.close()
+        body = newTag('body', content=[heading, list_of_indices])
+        printout(body, prefix, title=title, output_file="index")
 
     else:
         assert(False) # Unknown format
@@ -29,51 +34,61 @@ def print_mostly_used_index(api, prefix, fmt='html'):
     title = 'Mostly used DBCSR API symbols by functionality'
 
     if(fmt=='html'):
-        html, body = html_document_heading(title, hlevel=1, htext=title, hklass='index_title')
 
-        container = body.div(id='flex-container')
+        heading = newTag('h1', content=title, attributes={"class":'index_title'})
+
+        items = []
         for item in mostly_used:
-            outer_list_item = container.div(klass='linkbox', style='width: 32em;')
-            outer_list_item.h2(item['descr'])
-            inner_list = outer_list_item.ul(style='list-style-type:square; padding-bottom:1em;')
+            inner_items = []
             for sym_name in sorted(item['symbols']):
                 sym = sym_name.upper()
                 owner_module, ext_sym_name = api['symbols_map'][sym].lower().split(':')
                 href = filename(owner_module, hashtag=ext_sym_name)
-                inner_list.li.a(sym_name, href=href)
+                link = newTag('a', content=sym_name, attributes={"href":href})
+                inner_item = newTag('li', content=link)
+                inner_items.append(inner_item)
+            inner_list = newTag('ul', content=inner_items, attributes={"style":'list-style-type:square; padding-bottom:1em;'})
+            head = newTag('h2', content=item['descr'])
+            outer_list_item = newTag('div', content=[head, inner_list], attributes={"class":'linkbox', "style":'width: 32em;'})
+            items.append(outer_list_item)
+        container = newTag('div', content=items, id='flex-container')
 
-        fn = path.join( prefix, "mostly_used_index.html" )
-        f = open( fn, 'w' )
-        f.write("<!DOCTYPE html>\n" + str(html) + '\n')
-        f.close()
+        body = newTag('body', content=[heading, container])
+
+        fn = "mostly_used_index"
+        printout(body, prefix, title=title, output_file=fn)
 
     else:
         assert(False) # Unknown format
 
-    return fn, title
+    return fn+".html", title
 
 #=============================================================================
-def print_logical_tree_index(api, prefix, src_tree, packages, fmt='html'):
+def print_logical_tree_index(api, prefix, src_tree, packages, sym_lookup_table=None, fmt='html'):
 
-    title = 'Logical tree index of DBCSR API symbols'
+    if api == '__ALL__':
+        title = 'Logical tree index of ALL symbols'
+    else:
+        title = 'Logical tree index of DBCSR API symbols'
 
     if(fmt=='html'):
-        html, body = html_document_heading(title, hlevel=1, htext=title, hklass='index_title')
 
-        print_tree(api, src_tree, packages, body)
+        heading = newTag('h1', content=title, attributes={"class":'index_title'})
 
-        fn = path.join( prefix, "tree_index.html" )
-        f = open( fn, 'w' )
-        f.write("<!DOCTYPE html>\n" + str(html) + '\n')
-        f.close()
+        branches = get_tree(api, src_tree, packages, sym_lookup_table)
+        assert(branches)
+        body = newTag('body', content=[heading, branches])
+
+        fn = "tree_index" if api == '__ALL__' else "API_tree_index"
+        printout(body, prefix, title=title, output_file=fn)
 
     else:
         assert(False) # Unknown format
 
-    return fn, title
+    return fn+".html", title
 
 #=============================================================================
-def print_tree(api, tree, packages, body, rootnode=None):
+def get_tree(api, tree, packages, sym_lookup_table, rootnode=None):
 
     children = sorted(tree.GetChildren(rootnode))
 
@@ -81,7 +96,7 @@ def print_tree(api, tree, packages, body, rootnode=None):
     if(not children):
         return
 
-    children_list = body.ol('', klass='autonumb')
+    children_list = newTag('ol', attributes={"class":'autonumb'})
     for child in children:
         relative_path = child.replace(tree.root,'',1)[1:]
         files = packages[child]['files']
@@ -89,30 +104,53 @@ def print_tree(api, tree, packages, body, rootnode=None):
         my_modules_map = {}
         for f in files:
             mod_name = f.rsplit(".", 1)[0].upper()
-            if mod_name in api['modules_map']:
+            if api == '__ALL__':
+                if mod_name in sym_lookup_table:
+                    my_mmap = {}
+                    for k, v in sym_lookup_table[mod_name]['symbols_map'].iteritems():
+                        ext_module, external_sym_name = v.split(':')
+                        if(ext_module == '__HERE__'): # no forwarded symbols here...
+                            assert(k == external_sym_name)
+                            my_mmap[k] = k
+                    if(my_mmap):
+                        my_modules_map[mod_name.lower()] = my_mmap
+
+            # use the API forwarded symbols as a list of things to list
+            elif mod_name in api['modules_map']:
                 my_modules_map[mod_name.lower()] = api['modules_map'][mod_name]
 
         if(my_modules_map):
-            children_item = children_list.li(style='padding:15px;')
-            children_item.text(relative_path)
-            children_item.text(separator, escape=False)
-            children_item.text(packages[child]['description'])
+            content = ' &#8212; '.join([relative_path, packages[child]['description']])
+            children_item = newTag('li', content=content, attributes={"style":'padding:15px;'}, newlines=False)
+            children_list.addPiece(children_item)
 
-            container = children_item.div(id='flex-container')
+            contained_items = []
             for mod_name, symbols in my_modules_map.iteritems():
-                modules_item = container.div(klass='linkbox')
-                modules_item.h2.a(mod_name, href=filename(mod_name))
 
-                symbols_list = modules_item.ul('', style='list-style-type:square; padding-bottom:1em;')
+                items = []
                 for sym in sorted(symbols.keys()):
-                    tag = api['symbols_cat'][sym][:-1]
                     sym_name = sym.lower()
                     external_sym_name = symbols[sym].lower()
                     href = filename(mod_name, hashtag=external_sym_name)
-                    symbols_list.li.a(sym_name, href=href)
+                    link = newTag('a', content=sym_name, attributes={"href":href})
+                    item = newTag('li', content=link)
+                    items.append(item)
+                link = newTag('a', content=mod_name, attributes={"href":filename(mod_name)})
+                head = newTag('h2', content=link, attributes={"class":'ellipsed'})
+                symbols_list = newTag('ul', content=items, attributes={"style":'list-style-type:square; padding-bottom:1em;'})
+                modules_item = newTag('div', content=[head, symbols_list], attributes={"class":'linkbox'})
+
+                contained_items.append(modules_item)
+
+            container = newTag('div', content=contained_items, id='flex-container')
+            children_item.addPiece(container)
 
         # recurse ...
-        print_tree(api, tree, packages, children_list, rootnode=child)
+        branches = get_tree(api, tree, packages, sym_lookup_table, rootnode=child)
+        if branches:
+            children_item.addPiece(branches)
+
+    return children_list
 
 #=============================================================================
 def print_alphabetic(mod_list, prefix, descr='all', fmt='html'):
@@ -124,30 +162,42 @@ def print_alphabetic(mod_list, prefix, descr='all', fmt='html'):
 
     if(fmt=='html'):
 
-        html, body = html_document_heading(title, hlevel=1, htext=title, hklass='index_title')
+        heading = newTag('h1', content=title, attributes={"class":'index_title'})
 
         # initials
-        l = body.ul(klass='menu')
+        items = []
         for ini in initials:
-            l.li.a(ini.upper(), href='#'+ini)
+            link = newTag('a', content=ini.upper(), attributes={"href":'#'+ini.upper()})
+            item = newTag('li', content=link)
+            items.append(item)
+        ini_list = newTag('ul', content=items, id="initials", attributes={"class":'menu'})
 
-        outer_list = body.ul(klass='nobullet')
+        items = []
         for ini in initials:
-            item = outer_list.li
-            item.h4(ini.upper(), id=ini)
-            inner_list = item.div(klass='columns').ul
+            inner_items = []
             for mod in items_dict[ini]:
-                inner_list.li.a(mod, href=filename(mod))
+                link = newTag('a', content=mod, attributes={"href":filename(mod)})
+                inner_item = newTag('li', content=link)
+                inner_items.append(inner_item)
 
-        fn = path.join( prefix, "alphabetic_index_"+'_'.join(descr.split())+".html" )
-        f = open( fn, 'w' )
-        f.write("<!DOCTYPE html>\n" + str(html) + '\n')
-        f.close()
+            inner_list = newTag('ul', content=inner_items)
+            columns = newTag('div', content=inner_list, attributes={"class":'columns'})
+            back_link = newTag('a', content=ini.upper(), attributes={"href":'#initials'})
+            head = newTag('h4', content=back_link, id=ini.upper())
+            item = newTag('li', content=[head, columns])
+            items.append(item)
+        outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
+
+        body_parts = [heading, ini_list, outer_list]
+        body = newTag('body', content=body_parts)
+
+        fn = "alphabetic_index_"+'_'.join(descr.split())
+        printout(body, prefix, title=title, output_file=fn)
 
     else:
         assert(False) # Unknown format
 
-    return fn, title
+    return fn+".html", title
 
 #=============================================================================
 def print_alphabetic_index(api, prefix, fmt='html'):
@@ -159,32 +209,45 @@ def print_alphabetic_index(api, prefix, fmt='html'):
 
     if(fmt=='html'):
 
-        html, body = html_document_heading(title, hlevel=1, htext=title, hklass='index_title')
+        heading = newTag('h1', content=title, attributes={"class":'index_title'})
 
         # initials
-        l = body.ul(klass='menu')
+        items = []
         for ini in initials:
-            l.li.a(ini, href='#'+ini)
+            link = newTag('a', content=ini, attributes={"href":'#'+ini})
+            item = newTag('li', content=link)
+            items.append(item)
+        ini_list = newTag('ul', content=items, id="initials", attributes={"class":'menu'})
 
-        outer_list = body.ul(klass='nobullet')
+        items = []
         for ini in initials:
-            item = outer_list.li
-            item.h4(ini, id=ini)
-            inner_list = item.div(klass='columns').ul
+
+            inner_items = []
             for sym in symbols_dict[ini]:
                 sym_name = sym.lower()
                 owner_module, ext_sym_name = api['symbols_map'][sym].lower().split(':')
                 href = filename(owner_module, hashtag=ext_sym_name)
-                inner_list.li.a(sym_name, href=href)
+                link = newTag('a', content=sym_name, attributes={"href":href})
+                inner_item = newTag('li', content=link)
+                inner_items.append(inner_item)
 
-        fn = path.join( prefix, "alphabetic_index.html" )
-        f = open( fn, 'w' )
-        f.write("<!DOCTYPE html>\n" + str(html) + '\n')
-        f.close()
+            inner_list = newTag('ul', content=inner_items)
+            columns = newTag('div', content=inner_list, attributes={"class":'columns'})
+            back_link = newTag('a', content=ini, attributes={"href":'#initials'})
+            head = newTag('h4', content=back_link, id=ini)
+            item = newTag('li', content=[head, columns])
+            items.append(item)
+        outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
+
+        body_parts = [heading, ini_list, outer_list]
+        body = newTag('body', content=body_parts)
+
+        fn = "alphabetic_index"
+        printout(body, prefix, title=title, output_file=fn)
 
     else:
         assert(False) # Unknown format
 
-    return fn, title
+    return fn+".html", title
 
 #EOF

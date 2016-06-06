@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys, os
-import utils, printout, indices
+import utils, indices
+from render import printout, render_module, render_external
 
 #=============================================================================
 def main():
@@ -38,13 +39,13 @@ def main():
     modules_lists = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
 
     # mention external/intrinsic modules
-    printout.document_external(out_dir)
+    render_external(out_dir)
 
     if not skip_indices:
 
         my_indices = IofIndices()
 
-        # print the indices
+        # print the indices related to the API
         my_indices.Append( *indices.print_alphabetic_index(api, out_dir) )
         my_indices.Append( *indices.print_logical_tree_index(api, out_dir, src_tree, packages) )
         my_indices.Append( *indices.print_mostly_used_index(api, out_dir) )
@@ -52,6 +53,9 @@ def main():
         # more alphabetic indices
         my_indices.Append( *indices.print_alphabetic(modules_lists['__ALL__'], out_dir) )
         my_indices.Append( *indices.print_alphabetic(modules_lists['__API__'], out_dir, 'DBCSR API') )
+
+        # overall CP2K source tree
+        my_indices.Append( *indices.print_logical_tree_index('__ALL__', out_dir, src_tree, packages, sym_lookup_table) )
 
         # general index
         indices.print_general_index(out_dir, my_indices)
@@ -137,7 +141,8 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     modules_lists['__ALL__'].append(mod_name)
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
-                    printout.document_module(ast, rel_path, ast_dir, output_dir, api, sym_lookup_table)
+                    body = render_module(ast, rel_path, ast_dir, output_dir, api, sym_lookup_table)
+                    printout(body, output_dir, mod_name=mod_name)
     return modules_lists
 
 #=============================================================================
