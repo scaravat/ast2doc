@@ -198,7 +198,13 @@ def html_checker(input_html):
         assert(isinstance(input_html, basestring))
         parser = MyHTMLParser()
         line = input_html + ' '
-        parser.feed(line)
+        try:
+            parser.feed(line)
+        except HTMLParseError:
+            row, col = parser.getpos()
+            assert(row==1)
+            if verbose():
+                print 'Error starting at: %s{%c}%s' %(line[:col], line[col], line[col+1:])
 
         if not parser.errors:
             return input_html

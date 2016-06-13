@@ -1,10 +1,6 @@
-from cgi import escape
-
-def Comment(comment):
-    return '\n<!--\n    ' + comment + '\n' + (' '*(4+len(comment))) + '-->'
-
-class IdAlreadyAssignedException(Exception):
-    pass
+# Taken from "makeHTML" (http://www.hoboes.com/library/downloads/makeHTML.py.gz)
+# Copyright by Jerry Stratton
+#   (http://www.hoboes.com/Mimsy/hacks/object-oriented-html/)
 
 # Basic classes
 class newTag:
@@ -113,3 +109,9 @@ class newTag:
         newPart = newTag(code, content, style, id, attributes)
 
         return newPart
+
+def Comment(comment):
+    return '\n<!--\n    ' + comment + '\n' + (' '*(4+len(comment))) + '-->'
+
+class IdAlreadyAssignedException(Exception):
+    pass
