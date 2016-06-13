@@ -242,8 +242,12 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
         my_data = data[signature]
         who_has = my_data['routines']
         i, j = my_data['orig_definition']
+        # this is the argument
         a = args_list[i][j]
-        vtype = render_vartype(a['type'], symmap); last = vtype
+        # augment the module's symmap with that of the specific (when imported it matters!)
+        my_symmap = symmap.copy()
+        my_symmap.update(sp_symmap[i])
+        vtype = render_vartype(a['type'], my_symmap); last = vtype
         cols = []
         cols.append( newTag('td', content=vtype, attributes={"class":'vtype', "style":"text-align:right"}) )
 
