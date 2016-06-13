@@ -224,7 +224,15 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
     names_th = []
     for name in names:
         sp_name = name.lower()
-        link = newTag('a', content=sp_name, attributes={"href":'#'+sp_name})
+        assert(name in symmap)
+        owner_mod, ext_sym = symmap[name].split(':')
+        if(owner_mod in ('__HERE__', '__PRIV__')):
+            assert(name == ext_sym)
+            href = '#'+sp_name
+        else:
+            assert(not re.match('__\w+__',owner_mod))
+            href = filename(owner_mod.lower(), hashtag=ext_sym.lower())
+        link = newTag('a', content=sp_name, attributes={"href":href})
         rot_div = newTag('div', content=newTag('span', content=link)) # , id=':'.join([my_name, sp_name])
         names_th.append( newTag('th', content=rot_div, attributes={"class":'rotate'}) )
     rows = [newTag('tr', content=empty_col*5 + names_th)]
@@ -339,12 +347,9 @@ def interfaces_summary(names, intfcs, symmap):
 
                 owner_mod, ext_sym = symmap[specific].split(':')
                 if(owner_mod in ('__HERE__', '__PRIV__')):
-                   #href = '#'+':'.join([ifname.lower(), sym_name])
-                    href = '#'+sym_name # what if in a different module??? TODO
+                    href = '#'+sym_name
                 else:
-                   #assert(not re.match('__\w+__',owner_mod))
-                    if(re.match('__\w+__',owner_mod)):
-                        raise Exception('"%s"'%symmap[specific])
+                    assert(not re.match('__\w+__',owner_mod))
                     href = filename(owner_mod.lower(), hashtag=ext_sym.lower())
 
                 link = newTag('a', content=sym_name, attributes={"href":href})
