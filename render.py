@@ -246,7 +246,8 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
         a = args_list[i][j]
         # augment the module's symmap with that of the specific (when imported it matters!)
         my_symmap = symmap.copy()
-        my_symmap.update(sp_symmap[i])
+        if sp_symmap[i]:
+            my_symmap.update(sp_symmap[i])
         vtype = render_vartype(a['type'], my_symmap); last = vtype
         cols = []
         cols.append( newTag('td', content=vtype, attributes={"class":'vtype', "style":"text-align:right"}) )
