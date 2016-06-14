@@ -219,6 +219,11 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
                 else:
                     l2sort.append(signature)
 
+    # merge specifics symmaps with the module's one
+    merged_symmap = symmap.copy()
+    for my_symmap in sp_symmap:
+        merged_symmap.update(my_symmap)
+
     # table header (specific routines names)
     empty_col = [newTag('th', content='')]
     names_th = []
@@ -242,13 +247,8 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
         my_data = data[signature]
         who_has = my_data['routines']
         i, j = my_data['orig_definition']
-        # this is the argument
         a = args_list[i][j]
-        # augment the module's symmap with that of the specific (when imported it matters!)
-        my_symmap = symmap.copy()
-        if sp_symmap[i]:
-            my_symmap.update(sp_symmap[i])
-        vtype = render_vartype(a['type'], my_symmap); last = vtype
+        vtype = render_vartype(a['type'], merged_symmap); last = vtype
         cols = []
         cols.append( newTag('td', content=vtype, attributes={"class":'vtype', "style":"text-align:right"}) )
 
@@ -287,20 +287,18 @@ def import_specifics(specifics, ast, ast_dir, sym_lookup_table):
     for k in sp_sorting:
         v = specifics[k]
         module, external_sym = v.split(':',1)
+        symmap = {}
         if(module == '__HERE__' or module == '__PRIV__'):
             target_ast = ast
-            symmap = None
         elif(module == '__REFERENCED_PRIV__'):
             assert(False) # Shouldn't be here...
         else:
             mfile = path.join(ast_dir, module.lower()+'.ast')
-            target_ast = utils.read_ast(mfile)
-           #symmap = dict(sym_lookup_table[module]['symbols_map'])
+            target_ast = utils.read_ast(mfile, do_doxycheck=False)
 
             # copy the symmap (and tweak it when it contains symbols local to the imported module!)
-            symmap = {}
             for key, val in sym_lookup_table[module]['symbols_map'].iteritems():
-                m, ext_s = val.split(':',1)
+                m, ext_s = val.split(':')
                 if m == '__HERE__':
                     symmap[key] = ':'.join([module, ext_s])
                 elif m in ('__PRIV__', '__REFERENCED_PRIV__'):
