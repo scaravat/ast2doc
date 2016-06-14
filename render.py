@@ -64,8 +64,9 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
     # ...interfaces summary (generic procedures)
     if intfs:
         summary, specifics = interfaces_summary(intfs, ast['interfaces'], my_symbols_map)
-        summary.addID('interfaces_list')
-        body_parts.append(summary)
+        if summary:
+            summary.addID('interfaces_list')
+            body_parts.append(summary)
 
     # ...subroutines & functions (brief signatures)
     if functs_publics:
@@ -107,6 +108,11 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
             # ... function details
             subr = render_routine(all_subs_funs[functs_names.index(sym)], my_symbols_map, ast_dir)
             body_parts.append(subr)
+
+    # ...abstract & explicit interfaces
+    if intfs:
+        ifaces = render_explicit_interfaces(intfs, ast['interfaces'], my_symbols_map, ast_dir)
+        body_parts.extend(ifaces)
 
     # ...specific functions details
     if intfs:
@@ -364,13 +370,33 @@ def interfaces_summary(names, intfcs, symmap):
             generic_sym  = newTag('div', content=gen_link, newlines=False, attributes={"style":'font-weight:bold; padding:5px;'})
             specific_div = newTag('div', content=items, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
             sym_divs.append( newTag('div', content=[generic_sym, specific_div], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
-        else:
-            print 'SKIPPING INTERFACE ', iface['name'], iface['procedures']
 
-    container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
-    body_parts = [newTag('h4', content='Generic procedures:'), container]
-    my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
+    if sym_divs:
+        container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
+        body_parts = [newTag('h4', content='Generic procedures:'), container]
+        my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
+    else:
+        my_body = None
     return my_body, specifics
+
+#===============================================================================
+#   I N T E R F A C E S   (abstract & explicit ones)
+#===============================================================================
+def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
+    inames = [s['name'] for s in intfcs]
+    divs = []
+    # abstract ones
+    for ifname in sorted(names):
+        iface = intfcs[inames.index(ifname)]
+        if(iface['task'] == 'abstract_interface'):
+            ast = iface['procedures'][0]
+            divs.append(render_routine(ast, symmap, ast_dir))
+    # explicit ones
+   #for ifname in sorted(names):
+   #    iface = intfcs[inames.index(ifname)]
+   #    if(iface['task'] == 'explicit_interface'):
+   #        assert(False) # TODO
+    return divs
 
 #===============================================================================
 #   S U B R O U T I N E S   and   F U N C T I O N S
