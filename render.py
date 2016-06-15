@@ -819,7 +819,9 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings):
 
             bg_color  = '#f2f2f2' if yes else 'white'
             yes = not yes
-            forwarded_sym  = newTag('div', content=sym.lower(), newlines=False, attributes={"style":'font-weight:bold; padding:5px;'})
+            sym_name = sym.lower()
+            sym_span = newTag('span', content=sym_name, id=sym_name, attributes={"style":'font-weight:bold; padding:5px;'})
+            forwarded_sym  = newTag('div', content=sym_span, newlines=False)
             import_chain   = newTag('div', content=import_steps, attributes={"style":'padding-left:5px;'})
             sym_divs.append( newTag('div', content=[forwarded_sym, import_chain], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
 
