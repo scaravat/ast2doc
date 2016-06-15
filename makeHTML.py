@@ -29,6 +29,12 @@ class newTag:
         assert(isinstance(ID, basestring))
         self.id = ID
 
+    def popID(self):
+        assert(self.id)
+        ID = self.id
+        self.id = None
+        return ID
+
     def addAttribute(self, attributename, attributevalue):
         self.attributes[attributename] = attributevalue
 

@@ -391,11 +391,20 @@ def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
         if(iface['task'] == 'abstract_interface'):
             ast = iface['procedures'][0]
             divs.append(render_routine(ast, symmap, ast_dir))
+            divs[-1].pieces.insert(0, 'Abstract interface')
     # explicit ones
-   #for ifname in sorted(names):
-   #    iface = intfcs[inames.index(ifname)]
-   #    if(iface['task'] == 'explicit_interface'):
-   #        assert(False) # TODO
+    for ifname in sorted(names):
+        iface = intfcs[inames.index(ifname)]
+        if(iface['task'] == 'explicit_interface'):
+            assert(len(iface['procedures']))
+            ast = iface['procedures'][0]
+            div = render_routine(ast, symmap, ast_dir)
+            target_name = div.popID()
+            div.addID(ifname.lower())
+            div.pieces.insert(0, 'Explicit interface to '+target_name)
+            divs.append(div)
+    if divs:
+        divs.insert(0, newTag('h5', content="Abstract/Explicit interfaces", id='explicit_interfaces'))
     return divs
 
 #===============================================================================
@@ -549,13 +558,13 @@ def render_routine(subr, module_symmap, ast_dir):
                 r.addPart('td', content=intent)
                 last = intent
             else:
-                r.addPart('td')
+                r.addPart('td', content='')
             if my_attrs:
                 last.addPiece(',')
                 attrs = newTag('div', content=my_attrs, attributes={"style":'padding-left:1ex;'})
                 r.addPart('td', content=attrs)
             else:
-                r.addPart('td')
+                r.addPart('td', content='')
             r.addPart('td', content=separator, attributes={"class":'separee'})
             r.addPart('td', content=aname+adim, id=':'.join([my_name, aname]))
 
