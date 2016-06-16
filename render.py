@@ -13,7 +13,7 @@ ruler = newTag('hr')
 #=============================================================================
 #   M O D U L E   (main rendering function)
 #=============================================================================
-def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
+def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 
     # prefetch some info
     mod_name   = ast['name']
@@ -31,7 +31,6 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
     functs_names = [s['name'] for s in all_subs_funs]
     functs_publics = sorted(my_publics.intersection(functs_names))
 
-    api_symbols = api['symbols_map'].keys()
     my_symbols_map = sym_lookup_table[mod_name]['symbols_map']
     my_symbols_cat = sym_lookup_table[mod_name]['symbols_cat']
 
@@ -47,6 +46,9 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
     href = path.join( path.join('https://sourceforge.net/p/cp2k/code/HEAD/tree/trunk/cp2k/src', rel_path), my_file )
     src_link = newTag("a", attributes={"href":href}, content=my_file)
     body_parts.extend(['source:', src_link, ruler])
+
+    # init the queue of refereced private symbols to be printed
+    referenced_private_syms = {"TYPES":[], "PARAMS":[]}
 
     # SUMMARIES...
 
@@ -70,7 +72,7 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
 
     # ...subroutines & functions (brief signatures)
     if functs_publics:
-        summary = routines_summary(functs_publics, ast['subroutines'], ast['functions'], my_symbols_map, api_symbols)
+        summary = routines_summary(functs_publics, ast['subroutines'], ast['functions'], my_symbols_map, referenced_private_syms)
         summary.addID('routines_list')
         body_parts.append(summary)
 
@@ -79,19 +81,23 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
     # ...parameters & static vars
     if pars:
         body_parts.append(ruler)
-        paramts, statics = render_module_vars(ast['variables'], pars)
+        paramts, statics, other = render_module_vars(ast['variables'], pars)
         if(paramts):
-            p = render_parameters(paramts, api_symbols, my_symbols_map)
+            p = render_parameters(paramts, my_symbols_map, referenced_private_syms)
             p.addID('parameters')
             body_parts.append(p)
         if(statics):
-            s = render_staticvars(statics, api_symbols, my_symbols_map)
+            s = render_staticvars(statics, my_symbols_map, referenced_private_syms)
             s.addID('staticvars')
             body_parts.append(s)
+        if(other):
+            o = render_othervars(other, my_symbols_map, referenced_private_syms)
+            o.addID('othervars')
+            body_parts.append(o)
 
     # ...types
     if types:
-        pubtypes = render_types_set('public', types, ast['types'], api_symbols, my_symbols_map)
+        pubtypes = render_types_set('public', types, ast['types'], my_symbols_map, referenced_private_syms)
         body_parts.extend([ruler] + pubtypes)
 
     # ...specific functions for interfaces (compact view)
@@ -99,19 +105,19 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
         body_parts.append(ruler)
         for sym in sorted(intfs):
             if(sym in specifics): # this is due to explicit interfaces
-                iface = render_interface(sym, ast, ast_dir, specifics[sym], sym_lookup_table)
+                iface = render_interface(sym, ast, ast_dir, specifics[sym], sym_lookup_table, referenced_private_syms)
                 body_parts.append(iface)
 
     # ...subroutines & functions
     if functs_publics:
         for sym in functs_publics:
             # ... function details
-            subr = render_routine(all_subs_funs[functs_names.index(sym)], my_symbols_map, ast_dir)
+            subr = render_routine(all_subs_funs[functs_names.index(sym)], my_symbols_map, referenced_private_syms, ast_dir)
             body_parts.append(subr)
 
     # ...abstract & explicit interfaces
     if intfs:
-        ifaces = render_explicit_interfaces(intfs, ast['interfaces'], my_symbols_map, ast_dir)
+        ifaces = render_explicit_interfaces(intfs, ast['interfaces'], my_symbols_map, referenced_private_syms, ast_dir)
         body_parts.extend(ifaces)
 
     # ...specific functions details
@@ -119,27 +125,21 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
         spcf = []
         for sym in sorted(intfs):
             if(sym in specifics): # this is due to explicit interfaces
-                spcf.extend(render_specifics(sym, specifics[sym], my_symbols_map, all_subs_funs, ast_dir))
+                spcf.extend(render_specifics(sym, specifics[sym], my_symbols_map, referenced_private_syms, all_subs_funs, ast_dir))
         body_parts.extend(spcf)
 
+    # ...private but referenced stuff
+    todolists = get_referenced_privates(referenced_private_syms, my_symbols_map, ast)
+
     # ...private parameters
-    priv_pars = set(s['name'] for s in ast['variables']).difference(pars)
-    prvpars = None
-    if priv_pars:
-        paramts, statics = render_module_vars(ast['variables'], priv_pars)
-        if(paramts):
-            prvpars = render_parameters(paramts, api_symbols, my_symbols_map)
-           #prvpars.addID('priv_parameters')
-       #if(statics):
-       #    s = render_staticvars(statics, api_symbols, my_symbols_map)
-       #    s.addID('priv_statics')
-       #    body_parts.append(s)
+    priv_pars = todolists["PARAMS"]
+    paramts, statics, other = render_module_vars(ast['variables'], priv_pars)
+    assert(not (statics or other))
+    prvpars = render_parameters(paramts, my_symbols_map, referenced_private_syms)
 
     # ...private types
-    priv_types = set(s['name'] for s in ast['types']).difference(types)
-    prvtypes = []
-    if priv_types:
-        prvtypes = render_types_set('private', priv_types, ast['types'], [], my_symbols_map)
+    priv_types = todolists["TYPES"]
+    prvtypes = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced_private_syms)
 
     # ...private parameters & types
     if prvpars or prvtypes:
@@ -156,7 +156,7 @@ def render_module(ast, rel_path, ast_dir, prefix, api, sym_lookup_table):
 #===============================================================================
 #   I N T E R F A C E S   (generic procedures)
 #===============================================================================
-def render_specifics(ifname, my_specifics, my_symmap, fun_asts, ast_dir):
+def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, fun_asts, ast_dir):
     fnames = [f['name'] for f in fun_asts]
     sp_out = []
     l2sort = my_specifics.pop('l2sort')
@@ -165,7 +165,7 @@ def render_specifics(ifname, my_specifics, my_symmap, fun_asts, ast_dir):
         if(owner_mod == '__PRIV__'):
             assert(ext_name == spname)
             my_ast = fun_asts[fnames.index(spname)]
-            fpriv = render_routine(my_ast, my_symmap, ast_dir)
+            fpriv = render_routine(my_ast, my_symmap, referenced_private_syms, ast_dir)
             sp_out.append(fpriv)
         elif(owner_mod == '__HERE__'):
             pass # both the details and the link are already there!
@@ -176,7 +176,7 @@ def render_specifics(ifname, my_specifics, my_symmap, fun_asts, ast_dir):
     return sp_out
 
 #===============================================================================
-def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table):
+def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table, referenced_private_syms):
 
     inames  = [s['name'] for s in ast['interfaces']]
     my_ast  = ast['interfaces'][inames.index(iname)]
@@ -191,7 +191,7 @@ def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table):
     args_list = [s['args'] for s in sp]
     tweak_attrs_inplace(args_list)
 
-    specifics = render_specifics_compact(sp, sp_symmap, sym_lookup_table[mod_name]['symbols_map'], my_name, ast_dir)
+    specifics = render_specifics_compact(sp, sp_symmap, sym_lookup_table[mod_name]['symbols_map'], referenced_private_syms, my_name, ast_dir)
 
     header = newTag('h4', content='Generic procedure ')
     header.addPart('span', content=my_name, attributes={"class":"symname"})
@@ -200,7 +200,7 @@ def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table):
     return my_body
 
 #===============================================================================
-def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
+def render_specifics_compact(sp, sp_symmap, symmap, referenced_private_syms, my_name, ast_dir):
 
     # prefetch some specifics info
     tags, names, args_list = ([s[k] for s in sp] for k in ('tag', 'name', 'args'))
@@ -254,7 +254,7 @@ def render_specifics_compact(sp, sp_symmap, symmap, my_name, ast_dir):
         who_has = my_data['routines']
         i, j = my_data['orig_definition']
         a = args_list[i][j]
-        vtype = render_vartype(a['type'], merged_symmap); last = vtype
+        vtype = render_vartype(a['type'], merged_symmap, referenced_private_syms); last = vtype
         cols = []
         cols.append( newTag('td', content=vtype, attributes={"class":'vtype', "style":"text-align:right"}) )
 
@@ -296,8 +296,6 @@ def import_specifics(specifics, ast, ast_dir, sym_lookup_table):
         symmap = {}
         if(module == '__HERE__' or module == '__PRIV__'):
             target_ast = ast
-        elif(module == '__REFERENCED_PRIV__'):
-            assert(False) # Shouldn't be here...
         else:
             mfile = path.join(ast_dir, module.lower()+'.ast')
             target_ast = utils.read_ast(mfile, do_doxycheck=False)
@@ -382,7 +380,7 @@ def interfaces_summary(names, intfcs, symmap):
 #===============================================================================
 #   I N T E R F A C E S   (abstract & explicit ones)
 #===============================================================================
-def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
+def render_explicit_interfaces(names, intfcs, symmap, referenced_private_syms, ast_dir):
     inames = [s['name'] for s in intfcs]
     divs = []
     # abstract ones
@@ -390,7 +388,7 @@ def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
         iface = intfcs[inames.index(ifname)]
         if(iface['task'] == 'abstract_interface'):
             ast = iface['procedures'][0]
-            divs.append(render_routine(ast, symmap, ast_dir))
+            divs.append(render_routine(ast, symmap, referenced_private_syms, ast_dir))
             divs[-1].pieces.insert(0, 'Abstract interface')
     # explicit ones
     for ifname in sorted(names):
@@ -398,7 +396,7 @@ def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
         if(iface['task'] == 'explicit_interface'):
             assert(len(iface['procedures']))
             ast = iface['procedures'][0]
-            div = render_routine(ast, symmap, ast_dir)
+            div = render_routine(ast, symmap, referenced_private_syms, ast_dir)
             target_name = div.popID()
             div.addID(ifname.lower())
             div.pieces.insert(0, 'Explicit interface to '+target_name)
@@ -410,7 +408,7 @@ def render_explicit_interfaces(names, intfcs, symmap, ast_dir):
 #===============================================================================
 #   S U B R O U T I N E S   and   F U N C T I O N S
 #===============================================================================
-def routines_summary(names, subs, funs, symmap, api_syms):
+def routines_summary(names, subs, funs, symmap, referenced_private_syms):
     snames = [s['name'] for s in subs]
     fnames = [s['name'] for s in funs]
 
@@ -419,7 +417,6 @@ def routines_summary(names, subs, funs, symmap, api_syms):
     for i, sym in enumerate(names):
         my_ast = subs[snames.index(sym)] if sym in snames else funs[fnames.index(sym)]
 
-       #is_api    = sym in api_syms
         preattrs  = ' '.join(my_ast['attrs']+[''])
         retval    = my_ast['retval']['type'] if my_ast['retval'] else ''
         tag       = my_ast['tag'].upper() + ' '
@@ -432,11 +429,11 @@ def routines_summary(names, subs, funs, symmap, api_syms):
 
         if retval or attrs:
             if retval and attrs:
-                retval_type = render_vartype(retval, symmap)
+                retval_type = render_vartype(retval, symmap, referenced_private_syms)
                 retval_type.addPieces([' ', attrs])
                 tooltiptext = newTag('span', content=retval_type)
             elif retval:
-                tooltiptext = newTag('span', content=render_vartype(retval, symmap))
+                tooltiptext = newTag('span', content=render_vartype(retval, symmap, referenced_private_syms))
             elif attrs:
                 tooltiptext = newTag('span', content=attrs)
             tooltiptext.addAttributes({"class":'tooltiptext', "style":'font-style:oblique;'})
@@ -466,7 +463,7 @@ def routines_summary(names, subs, funs, symmap, api_syms):
     return my_body
 
 #===============================================================================
-def render_routine(subr, module_symmap, ast_dir):
+def render_routine(subr, module_symmap, referenced_private_syms, ast_dir):
 
     # fetch routine's info
     my_name    = subr['name'].lower()
@@ -525,7 +522,7 @@ def render_routine(subr, module_symmap, ast_dir):
 
         r.addPart('td', content='Return Value')
         r.addPart('td', content=separator, attributes={"class":'separee'})
-        r.addPart('td', content=render_vartype(my_retval['type'], my_symbols_map), attributes={"class":'vtype'})
+        r.addPart('td', content=render_vartype(my_retval['type'], my_symbols_map, referenced_private_syms), attributes={"class":'vtype'})
         d.addPart('dd', content=my_retval['descr'], attributes={"class":'argdescr'})
 
     # arguments description
@@ -549,7 +546,7 @@ def render_routine(subr, module_symmap, ast_dir):
             descr = a['descr'] if a['descr'] else missing_description
 
             r = newTag('tr', attributes={"style":'font-family:courier;'})
-            vtype = render_vartype(a['type'], my_symbols_map)
+            vtype = render_vartype(a['type'], my_symbols_map, referenced_private_syms)
             r.addPart('td', content=vtype, attributes={"class":'vtype'})
             last  = vtype
             if my_intnt:
@@ -583,7 +580,7 @@ def render_routine(subr, module_symmap, ast_dir):
 def render_module_vars(variables, vpublics):
     # 'variables' can be only static variables or parameters
     vnlist = [v['name'] for v in variables]
-    paramts, statics = [], []
+    paramts, statics, other = [], [], []
     for vname in vpublics:
         v = variables[vnlist.index(vname)]
         if('PARAMETER' in v['attrs']):
@@ -592,12 +589,13 @@ def render_module_vars(variables, vpublics):
         elif('SAVE' in v['attrs']):
             assert(not 'PARAMETER' in v['attrs'])
             statics.append(v)
+        else:
+            other.append(v)
 
-    return paramts, statics
+    return paramts, statics, other
 
 #===============================================================================
-def render_parameters(paramts, api_symbols, my_symbols_map, hint='PARAMETER'):
-    assert(paramts)
+def render_parameters(paramts, my_symbols_map, referenced_private_syms, hint='PARAMETER'):
     names = [v['name'] for v in paramts]
     rows = []
     for sym in sorted(names):
@@ -608,11 +606,10 @@ def render_parameters(paramts, api_symbols, my_symbols_map, hint='PARAMETER'):
         if owner_mod in ('__HERE__', '__REFERENCED_PRIV__'):
             v = paramts[names.index(sym)]
             sym_name = sym.lower()
-           #api_class = 'api_symbol' if sym in api_symbols else 'argname'
-           #APIness   = '(API)' if sym in api_symbols else ''
 
             attrs  = v['attrs'][:]
-            attrs.remove(hint)
+            if hint:
+                attrs.remove(hint)
             for vis in 'PUBLIC', 'PRIVATE':
                 if vis in attrs:
                     attrs.remove(vis)
@@ -625,28 +622,29 @@ def render_parameters(paramts, api_symbols, my_symbols_map, hint='PARAMETER'):
             v_name = sym_name + v['dim']
             if 'init' in v:
                 v_name += ' = ' + v['init'][1:].lower()
-            v_type = render_vartype(v['type'], my_symbols_map)
+            v_type = render_vartype(v['type'], my_symbols_map, referenced_private_syms)
 
             td = newTag('td', content=v_type, attributes={"class":'vtype'})
             row = newTag('tr', content=td, attributes={"class":'alternating'})
-            rows.append(row)
             if last_attr:
                 assert(last_attr in ('POINTER', 'TARGET', 'ALLOCATABLE'))
-                assert(hint=='SAVE')
+                assert(hint!='PARAMETER')
                 assert(not attrs)
-                row.addPart('td', content=last_attr, attributes={"style":'padding-left:1ex;'})
+                v_type.addPiece(',')
+                row.addPart('td', content=last_attr, attributes={"style":'padding-left:1ex;', "class":'misc_attrs'})
             else:
                 row.addPart('td', content='')
             row.addPart('td', content=separator, attributes={"class":'separee'})
             row.addPart('td', content=v_name, id=sym_name, attributes={"class":"parname"})
-           #r.td(APIness,   klass="apiness")
-        elif owner_mod == '__PRIV__':
-            pass
+            rows.append(row)
         else:
             raise Exception('"%s"'%my_symbols_map[sym])
 
     if rows:
-        heading = newTag('h4', content='Parameters:' if hint=='PARAMETER' else 'Static variables:')
+        what = 'Other:'
+        if(hint):
+            what = 'Parameters:' if hint=='PARAMETER' else 'Static variables:'
+        heading = newTag('h4', content=what)
         table = newTag('table', content=rows, attributes={"class":"arglist"})
         html = newTag('div', content=[heading, table], attributes={"class":"box", "style":'overflow:auto;'})
         return html
@@ -654,6 +652,10 @@ def render_parameters(paramts, api_symbols, my_symbols_map, hint='PARAMETER'):
 #===============================================================================
 def render_staticvars(*args):
     return render_parameters(*args, hint='SAVE')
+
+#===============================================================================
+def render_othervars(*args):
+    return render_parameters(*args, hint=None)
 
 #===============================================================================
 #   T Y P E S
@@ -678,8 +680,7 @@ def types_summary(typenames, ast):
     return my_body
 
 #===============================================================================
-def render_types_set(tag, names, ast, api_symbols, my_symbols_map):
-    assert(names)
+def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms):
     type_names = [s['name'] for s in ast]
 
     t_pieces = []
@@ -689,7 +690,7 @@ def render_types_set(tag, names, ast, api_symbols, my_symbols_map):
         owner_mod, ext_sym = my_symbols_map[sym].split(':')
         if owner_mod in ('__HERE__', '__REFERENCED_PRIV__'):
             my_ast = ast[type_names.index(sym)]
-            t = render_type(my_ast, sym in api_symbols, my_symbols_map)
+            t = render_type(my_ast, my_symbols_map, referenced_private_syms)
             box = newTag('div', content=t, id=sym.lower(), attributes={"class":'box'})
             t_pieces.append( box )
         elif owner_mod == '__PRIV__':
@@ -702,13 +703,12 @@ def render_types_set(tag, names, ast, api_symbols, my_symbols_map):
     return t_pieces
 
 #===============================================================================
-def render_type(tp, is_api, my_symbols_map):
+def render_type(tp, my_symbols_map, referenced_private_syms):
     my_name = tp['name'].lower()
     my_descr = tp['descr'] if tp['descr'] else missing_description
     comment = " ".join([tp['tag'].upper(), my_name])
-    APIness = '' #'API ' if is_api else ''
 
-    title = APIness + 'TYPE' + separator
+    title = 'TYPE' + separator
     body_header = newTag('h4', content=title)
     body_header.addPart('span', content=my_name, attributes={"class":"symname"})
     body_parts = [Comment(comment), body_header, newTag('p', content=my_descr)]
@@ -729,7 +729,7 @@ def render_type(tp, is_api, my_symbols_map):
 
         v_name = v['name'].lower() + v_init
         v_descr = v['descr'] if v['descr'] else missing_description
-        v_type = render_vartype(v['type'], my_symbols_map)
+        v_type = render_vartype(v['type'], my_symbols_map, referenced_private_syms)
         v_attr = ', '.join(v['attrs'])
         if v_attr:
             v_type.addPiece(',')
@@ -751,7 +751,7 @@ def render_type(tp, is_api, my_symbols_map):
 #   U T I L I T I E S
 #===============================================================================
 external_stuff = {}
-def render_vartype(vtype, symmap):
+def render_vartype(vtype, symmap, referenced_private_syms):
     global external_stuff
     if(not vtype):
         return ''
@@ -778,6 +778,8 @@ def render_vartype(vtype, symmap):
                     elif owner_module=='__PRIV__':
                         assert(item == remote_sym)
                         symmap[item] = ':'.join(["__REFERENCED_PRIV__", remote_sym])
+                        what = "TYPES" if var_type == "TYPE" else "PARAMS"
+                        referenced_private_syms[what].append(item)
                     pieces.append(newTag('a', content=item.lower(), attributes={"href":filename(owner_module.lower(), hashtag=remote_sym.lower())}))
                 else:
                     pieces.append(item.lower())
@@ -804,7 +806,7 @@ def render_external(prefix):
 #===============================================================================
 def render_forwarded(forwarded, my_symbols_map, my_forwardings):
 
-    yes = True
+    yes = False
     sym_divs = []
     for sym in forwarded:
         if not sym in utils.external_symbols:
@@ -829,6 +831,45 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings):
     body_parts = [newTag('h4', content='Forwarded symbols:'), container]
     my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
     return my_body
+
+#===============================================================================
+def get_referenced_privates(referenced_so_far, my_symbols_map, ast):
+
+    referenced = referenced_so_far.copy()
+    params_todo, types_todo = [], []
+
+    while( list(utils.traverse(referenced.values())) ):
+
+        #   P A R A M E T E R S
+
+        # select what to process
+        priv_pars = [item for item in referenced["PARAMS"] if item not in params_todo]
+
+        # dummy call only to accumulate all the referenced private parameters
+        paramts, statics, other = render_module_vars(ast['variables'], priv_pars)
+        assert(not (statics or other))
+        prvp_div = render_parameters(paramts, my_symbols_map, referenced)
+
+        # update lists
+        for item in priv_pars:
+            referenced["PARAMS"].remove(item)
+            params_todo.append(item)
+
+        #   T Y P E S
+
+        # select what to process
+        priv_types = [item for item in referenced["TYPES"] if item not in types_todo]
+
+        # dummy call only to accumulate all the referenced private parameters
+        prvt_divs = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced)
+
+        # update lists
+        for item in priv_types:
+            referenced["TYPES"].remove(item)
+            types_todo.append(item)
+
+    todolists = zip(("PARAMS", "TYPES"), [params_todo, types_todo])
+    return dict(todolists)
 
 #===============================================================================
 def group_arguments(args):

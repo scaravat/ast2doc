@@ -141,7 +141,7 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     modules_lists['__ALL__'].append(mod_name)
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
-                    body = render_module(ast, rel_path, ast_dir, output_dir, api, sym_lookup_table)
+                    body = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
                     printout(body, output_dir, mod_name=mod_name)
     return modules_lists
 
