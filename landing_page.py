@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from os import path
-from mostly_used import l as mostly_used
 from makeHTML import newTag
 from render import filename, printout
 
@@ -160,66 +159,6 @@ def print_about_page(prefix):
     return fileBaseName+'.html', title
 
 #=============================================================================
-def print_general_index_(prefix, indices, fmt='html'):
-    title = 'DBCSR API Documentation'
-    indices_list = indices.l2sort
-    if(fmt=='html'):
-
-        heading = newTag('h1', content=title, attributes={"class":'index_title'})
-
-        items = []
-        for i in indices_list:
-            link = newTag('a', content=getattr(indices, i), attributes={"href":'.'.join([i, fmt])})
-            head = newTag('h3', content=link)
-            item = newTag('li', content=head)
-            items.append(item)
-        list_of_indices = newTag('ul', content=items)
-
-        body = newTag('body', content=[heading, list_of_indices])
-
-        fileBaseName = "plain_index"
-        printout(body, prefix, title=title, output_file=fileBaseName)
-        return fileBaseName+'.html'
-
-    else:
-        assert(False) # Unknown format
-
-#=============================================================================
-def print_mostly_used_index_(api, prefix, fmt='html'):
-
-    title = 'Mostly used DBCSR API symbols by functionality'
-
-    if(fmt=='html'):
-
-        heading = newTag('h1', content=title, attributes={"class":'index_title'})
-
-        items = []
-        for item in mostly_used:
-            inner_items = []
-            for sym_name in sorted(item['symbols']):
-                sym = sym_name.upper()
-                owner_module, ext_sym_name = api['symbols_map'][sym].lower().split(':')
-                href = filename(owner_module, hashtag=ext_sym_name)
-                link = newTag('a', content=sym_name, attributes={"href":href})
-                inner_item = newTag('li', content=link)
-                inner_items.append(inner_item)
-            inner_list = newTag('ul', content=inner_items, attributes={"style":'list-style-type:square; padding-bottom:1em;'})
-            head = newTag('h2', content=item['descr'])
-            outer_list_item = newTag('div', content=[head, inner_list], attributes={"class":'linkbox', "style":'width: 32em;'})
-            items.append(outer_list_item)
-        container = newTag('div', content=items, id='flex-container')
-
-        body = newTag('body', content=[heading, container])
-
-        fn = "mostly_used_index"
-        printout(body, prefix, title=title, output_file=fn)
-
-    else:
-        assert(False) # Unknown format
-
-    return fn+".html", title
-
-#=============================================================================
 def get_package_stuff(modules_lists, packages, pkg_path='__ROOT__'):
     root = path.normpath(path.commonprefix(packages.keys())) 
     be_root = pkg_path=='__ROOT__'
@@ -301,34 +240,6 @@ def get_tree(api, tree, modules_lists, packages, sym_lookup_table, rootnode=None
                 my_modules_map[mod_name.lower()] = api['modules_map'][mod_name]
 
         if(my_modules_map):
-            """
-            content = ' &#8212; '.join([relative_path, packages[child]['description']])
-            children_item = newTag('li', content=content, newlines=False)#, attributes={"style":'padding:15px;'}
-
-            if only_tree:
-                pass
-            else:
-                contained_items = []
-                for mod_name, symbols in my_modules_map.iteritems():
-
-                    items = []
-                    for sym in sorted(symbols.keys()):
-                        sym_name = sym.lower()
-                        external_sym_name = symbols[sym].lower()
-                        href = filename(mod_name, hashtag=external_sym_name)
-                        link = newTag('a', content=sym_name, attributes={"href":href})
-                        item = newTag('li', content=link)
-                        items.append(item)
-                    link = newTag('a', content=mod_name, attributes={"href":filename(mod_name)})
-                    head = newTag('h2', content=link, attributes={"class":'ellipsed'})
-                    symbols_list = newTag('ul', content=items, attributes={"style":'list-style-type:square; padding-bottom:1em;'})
-                    modules_item = newTag('div', content=[head, symbols_list], attributes={"class":'linkbox'})
-
-                    contained_items.append(modules_item)
-
-                container = newTag('div', content=contained_items, id='flex-container')
-                children_item.addPiece(container)
-            """
             children_item = newTag('li', content=get_package_stuff(modules_lists, packages, child))
 
             # recurse ...

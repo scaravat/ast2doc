@@ -1,14 +1,3 @@
-/*
- function initActive() {
-    var e = document.getElementById('OverviewFrame');
-    e.addEventListener("onunload", debugActive);
-    return;
- }
-
- function debugActive() {
-    window.alert("Ciao");
- }*/
-
  function getActive() {
     var activePage = document.getElementById('OverviewFrame').src;
     var fileName = activePage.split("/").pop();

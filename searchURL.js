@@ -1,3 +1,4 @@
+
     targetPage = "" + window.location.search;
     if (targetPage != "" && targetPage != "undefined")
         targetPage = targetPage.substring(1);
