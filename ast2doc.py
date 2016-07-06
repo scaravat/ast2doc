@@ -36,6 +36,9 @@ def main():
     packages = scan_packages(src_dir)
     src_tree = build_tree(packages)
 
+    # module/symbol usage statistics
+    statistics = {} # TODO usage_statistics(sym_lookup_table, packages)
+
     # document all modules public symbols
     modules_lists = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
 
