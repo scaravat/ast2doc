@@ -37,6 +37,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # ...header
     body_header = newTag('h2', content='Documentation for module')
     body_header.addPart('span', content=my_name, attributes={"class":"symname"})
+    body_header.addPart('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo'})
     body_parts = [Comment(comment), body_header]
 
     # ...module description
@@ -44,7 +45,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 
     # ...link to the source code (@sourceforge)
     href = path.join( path.join('https://sourceforge.net/p/cp2k/code/HEAD/tree/trunk/cp2k/src', rel_path), my_file )
-    src_link = newTag("a", attributes={"href":href}, content=my_file)
+    src_link = newTag("a", attributes={"href":href, "target":'_blank'}, content=my_file)
     body_parts.extend(['source:', src_link, ruler])
 
     # init the queue of refereced private symbols to be printed
@@ -914,7 +915,7 @@ def group_arguments(args):
     return agroups
 
 #===============================================================================
-def printout(body, prefix, mod_name=None, title=None, output_file=None):
+def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None):
 
     # HTML heading
     head = newTag('head')
@@ -925,6 +926,17 @@ def printout(body, prefix, mod_name=None, title=None, output_file=None):
     else:
         assert(title and output_file)
     head.addPart('title', content=title)
+    head.addPart('meta', attributes={"charset":"UTF-8"})
+
+    # jscript when provided
+    if jscript:
+        if isinstance(jscript, basestring):
+            head.addPart('script', content='', attributes={"type":"text/javascript", "src":jscript})
+        elif isinstance(jscript, list):
+            for script in jscript:
+                head.addPart('script', content='', attributes={"type":"text/javascript", "src":script})
+        else:
+            assert(False)
 
     # main page
     html = newTag('html', content=[head, body])

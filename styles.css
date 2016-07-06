@@ -3,7 +3,7 @@
  */
 
 body {
-    font-size: 110%;
+//  font-size: 110%;
     font-family: "Liberation Serif";
 }
 
@@ -71,6 +71,11 @@ th.rotate > div > span {
     font-family: courier;
     font-size: 105%;
     padding: 5px;
+}
+
+.pkgname {
+    font-style: italic;
+    padding: 2px;
 }
 
 
@@ -195,6 +200,39 @@ ul.nobullet {
     padding: 0px 5px;
 }
 
+ul.navlist {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: lightgrey; /*#333;*/
+}
+ul.navlist li {
+    float: left;
+    border-right: 2px solid white;
+}
+ul.navlist li:last-child {
+    float: right;
+    border-right: none;
+}
+
+ul.navlist li a {
+    display: block;
+    text-align: center;
+    padding: 7px 8px;
+    text-decoration: none;
+}
+
+ul.navlist li a.active {
+    color: white;
+    background-color: #4CAF50;
+}
+
+ul.navlist li a:hover:not(.active) {
+    color: white;
+    background-color: #111;
+}
+
 
 .ellipsed {
     white-space: nowrap;
@@ -315,4 +353,33 @@ ol.autonumb > li:before {
   content: counters(item, ".") ". ";
   padding-right: 0.6em;    
 /*display: table-cell;*/
+}
+
+img.logo {
+    margin-left: 30px;
+    width: 100px;
+    object-fit: contain;
+    float: right;
+}
+
+iframe.wideautoheight {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: none
+}
+
+.clearfix {
+    clear: both;
+}
+
+.togglevis {
+    margin: 0px;
+    display: none;
+    font-family: monospace;
+  //height: 6em;
+    max-height: 6em;
+    object-fit: contain;
+    overflow-y:auto;
+    border: 1px solid gray;
 }

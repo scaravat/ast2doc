@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys, os
-import utils, indices
+import utils
+from landing_page import print_landingPage
 from render import printout, render_module, render_external
 
 #=============================================================================
@@ -41,24 +42,11 @@ def main():
     # mention external/intrinsic modules
     render_external(out_dir)
 
-    if not skip_indices:
+    if skip_indices:
+        return
 
-        my_indices = IofIndices()
-
-        # print the indices related to the API
-        my_indices.Append( *indices.print_alphabetic_index(api, out_dir) )
-        my_indices.Append( *indices.print_logical_tree_index(api, out_dir, src_tree, packages) )
-        my_indices.Append( *indices.print_mostly_used_index(api, out_dir) )
-
-        # more alphabetic indices
-        my_indices.Append( *indices.print_alphabetic(modules_lists['__ALL__'], out_dir) )
-        my_indices.Append( *indices.print_alphabetic(modules_lists['__API__'], out_dir, 'DBCSR API') )
-
-        # overall CP2K source tree
-        my_indices.Append( *indices.print_logical_tree_index('__ALL__', out_dir, src_tree, packages, sym_lookup_table) )
-
-        # general index
-        indices.print_general_index(out_dir, my_indices)
+    # Landing page
+    print_landingPage(out_dir, src_tree, packages, modules_lists, statistics, api, sym_lookup_table)
 
 #=============================================================================
 def lookup_imported_symbols(ast_dir, wanted_module, wanted_api):
@@ -79,26 +67,6 @@ def lookup_imported_symbols(ast_dir, wanted_module, wanted_api):
             utils.cache_symbol_lookup(ast, ast_dir, sym_lookup_table)
 
     return(sym_lookup_table)
-
-#=============================================================================
-class IofIndices():
-
-    def __init__(self, fmt='html'):
-        self.l2sort = []
-        self.fmt = fmt
-        self.dname = None
-
-    def Append(self, fn, t):
-        assert(fn.endswith('.' + self.fmt))
-        dname = os.path.dirname(fn)
-        if(self.dname):
-            assert(dname == self.dname)
-        else:
-            self.dname = dname
-        fname = os.path.basename(fn)
-        k = fname.rsplit('.',1)[0]
-        setattr(self, k, t)
-        self.l2sort.append(k)
 
 #=============================================================================
 def get_api(wanted_api, ast_dir, sym_lookup_table):
