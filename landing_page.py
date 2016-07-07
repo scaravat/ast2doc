@@ -6,7 +6,7 @@ from makeHTML import newTag
 from render import filename, printout
 
 #=============================================================================
-def print_allModules(prefix, modules_list, pkgname=None):
+def print_allModules(prefix, modules_list, modules_description, pkgname=None):
 
     if pkgname:
         title = " ".join([pkgname, "package"])
@@ -22,7 +22,7 @@ def print_allModules(prefix, modules_list, pkgname=None):
 
     mod_items = []
     for module in sorted(modules_list):
-        link = newTag('a', content=module, attributes={"href":module+".html", "target":'moduleFrame'})
+        link = newTag('a', content=module, attributes={"href":module+".html", "target":'moduleFrame', "title":modules_description[module]})
         mod_items.append(newTag('li', content=link))
     mod_list = newTag('ul', content=mod_items, attributes={"class":'nobullet'})
     body = newTag('body', content=[heading, mod_list])
@@ -32,7 +32,7 @@ def print_allModules(prefix, modules_list, pkgname=None):
     return fileBaseName+'.html'
 
 #=============================================================================
-def print_packageFrame(prefix, modules_lists):
+def print_packageFrame(prefix, modules_lists, modules_description):
     packages = [item for item in modules_lists.keys() if not item in ('__ALL__', '__API__')]
 
     files = []
@@ -41,23 +41,23 @@ def print_packageFrame(prefix, modules_lists):
         title = "Modules for package " + pkgname
         heading = newTag('h2', content=title)
         my_modules = modules_lists[pkg]
-        my_file = print_allModules(prefix, my_modules, pkgname=pkgname)
+        my_file = print_allModules(prefix, my_modules, modules_description, pkgname=pkgname)
         files.append(my_file)
     return files
 
 #=============================================================================
-def print_packageListFrame(prefix, allModulesFile, src_tree):
+def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
     title = "Overview of CP2K API"
     heading = newTag('h2', content=title)
 
     link = newTag('a', content="All Modules", attributes={"href":allModulesFile, "target":"packageFrame", "style":'font-style:oblique;'})
     allModLink_div = newTag('div', content=link)
 
-    pkglist = getTree(src_tree)
-    rootnode = newTag('a', content="[root]", attributes={"href":"ROOT-frame.html", "target":"packageFrame", "style":'font-style:oblique;'})
+    pkglist = getTree(src_tree, packages)
+    rootnode = newTag('a', content="[root]", attributes={"href":"ROOT-frame.html", "target":"packageFrame", "title":packages["."]['description'], "style":'font-style:oblique;'})
     fakelist = newTag('ul', content=newTag('li', content=[rootnode, pkglist]), attributes={"class":"nobullet"})
     list_heading = newTag('h4', content="Packages tree:", attributes={"title":"Packages"})
-    listContainer_div = newTag('div', content=[list_heading, fakelist])#, pkglist])
+    listContainer_div = newTag('div', content=[list_heading, fakelist])
 
     body = newTag('body', content=[heading, allModLink_div, listContainer_div])
 
@@ -66,13 +66,13 @@ def print_packageListFrame(prefix, allModulesFile, src_tree):
     return fileBaseName+'.html'
 
 #=============================================================================
-def getTree(tree, rootnode=None):
+def getTree(tree, packages, rootnode=None):
     branches = []
     for child in sorted(tree.GetChildren(rootnode)):
-        pkgname = child.replace(tree.root,'',1)[1:]
-        link = newTag('a', content=pkgname, attributes={"href":pkgname.replace('/','__').upper()+"-frame.html", "target":"packageFrame"})
+        pkgname = child
+        link = newTag('a', content=pkgname, attributes={"href":pkgname.replace('/','__').upper()+"-frame.html", "target":"packageFrame", "title":packages[child]['description']})
         list_item = newTag('li', content=link)
-        childpkglist = getTree(tree, rootnode=child)
+        childpkglist = getTree(tree, packages, rootnode=child)
         if childpkglist:
             list_item.addPiece(childpkglist)
         branches.append(list_item)
@@ -102,14 +102,14 @@ def get_banner(indices):
     return banner
 
 #=============================================================================
-def print_overview(prefix, src_tree, packages, modules_lists, api, sym_lookup_table):
+def print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
 
     my_indices = IofIndices()
-    my_indices.Append( 'Tree', *print_logical_tree_index('__ALL__', prefix, src_tree, modules_lists, packages, sym_lookup_table) )
-    my_indices.Append( 'Index', *print_alphabetic(modules_lists['__ALL__'], prefix, 'all') )
-   #my_indices.Append( 'Mostly used', *print_mostly_used(api, prefix) )
-   #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, packages) )
-    my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], prefix, 'DBCSR API') )
+    my_indices.Append( 'Tree', *print_logical_tree_index('__ALL__', prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table) )
+    my_indices.Append( 'Index', *print_alphabetic(modules_lists['__ALL__'], modules_description, prefix, 'all') )
+   #my_indices.Append( 'Mostly used', *print_mostly_used(statistics, prefix) )
+   #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
+    my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
 
     # last `index' is "About"
     my_indices.Append( 'About', *print_about_page(prefix) )
@@ -127,12 +127,12 @@ def print_overview(prefix, src_tree, packages, modules_lists, api, sym_lookup_ta
     return fileBaseName+'.html'
 
 #=============================================================================
-def print_landingPage(prefix, src_tree, packages, modules_lists, statistics, api, sym_lookup_table):
+def print_landingPage(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
 
-    allModulesFile  = print_allModules(prefix, modules_lists['__ALL__'])
-    pkgModulesFiles = print_packageFrame(prefix, modules_lists)
-    packageListFile = print_packageListFrame(prefix, allModulesFile, src_tree)
-    overviewFile    = print_overview(prefix, src_tree, packages, modules_lists, api, sym_lookup_table)
+    allModulesFile  = print_allModules(prefix, modules_lists['__ALL__'], modules_description)
+    pkgModulesFiles = print_packageFrame(prefix, modules_lists, modules_description)
+    packageListFile = print_packageListFrame(prefix, allModulesFile, src_tree, packages)
+    overviewFile    = print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table)
 
     title = 'CP2K API Documentation'
 
@@ -161,27 +161,27 @@ def print_about_page(prefix):
     return fileBaseName+'.html', title
 
 #=============================================================================
-def get_package_stuff(modules_lists, packages, pkg_path='__ROOT__'):
+def get_package_stuff(modules_lists, modules_description, packages, pkg_path='__ROOT__'):
     root = path.normpath(path.commonprefix(packages.keys())) 
     be_root = pkg_path=='__ROOT__'
     node = root if be_root else pkg_path
     rel_path = path.relpath(node, root)
-    pkg_name = '[root]' if be_root else pkg_path.replace(root, '', 1)[1:]
+    pkg_name = '[root]' if be_root else pkg_path
     pkg_id = node + '__mlist'
     pkg_files = [f.rsplit(".", 1)[0] for f in packages[node]['files']]
     pkg_modules = [f for f in pkg_files if f in modules_lists[rel_path]]
-    mlinks = [newTag('a', content=m, attributes={"href":m+".html", "target":'moduleFrame'}) for m in sorted(pkg_modules)]
+    mlinks = [newTag('a', content=m, attributes={"href":m+".html", "target":'moduleFrame', "title":modules_description[m]}) for m in sorted(pkg_modules)]
     mitems = [newTag('li', content=l) for l in mlinks]
     mlist = newTag('ul', content=mitems, attributes={"class":'horizontal', "style":'padding:5px;'})
     modules_container = newTag('div', content=mlist, attributes={"id":pkg_id, "class":'togglevis'})
-    node_button = newTag('a', content=pkg_name, attributes={"href":"javascript:showhide('"+pkg_id+"')"})
+    node_button = newTag('a', content=pkg_name, attributes={"href":"javascript:showhide('"+pkg_id+"')", "title":'[show/hide package modules]'})
     if be_root:
         node_button.addAttribute("style", 'font-style:oblique;')
     description = packages[node]['description']
     return [node_button, ' &#8212; ', description, modules_container]
 
 #=============================================================================
-def print_logical_tree_index(api, prefix, src_tree, modules_lists, packages, sym_lookup_table=None, fmt='html'):
+def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table=None, fmt='html'):
 
     if api == '__ALL__':
         title = 'Logical tree of ALL packages'
@@ -192,9 +192,9 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, packages, sym
 
         heading = newTag('h2', content=title, attributes={"class":'index_title'})
 
-        root_item = newTag('li', content=get_package_stuff(modules_lists, packages))
+        root_item = newTag('li', content=get_package_stuff(modules_lists, modules_description, packages))
 
-        branches = get_tree(api, src_tree, modules_lists, packages, sym_lookup_table)
+        branches = get_tree(api, src_tree, modules_lists, modules_description, packages, sym_lookup_table)
         assert(branches)
         root_item.addPiece(branches)
 
@@ -210,7 +210,7 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, packages, sym
     return fn+".html", title
 
 #=============================================================================
-def get_tree(api, tree, modules_lists, packages, sym_lookup_table, rootnode=None):
+def get_tree(api, tree, modules_lists, modules_description, packages, sym_lookup_table, rootnode=None):
 
     children = sorted(tree.GetChildren(rootnode))
 
@@ -242,10 +242,10 @@ def get_tree(api, tree, modules_lists, packages, sym_lookup_table, rootnode=None
                 my_modules_map[mod_name.lower()] = api['modules_map'][mod_name]
 
         if(my_modules_map):
-            children_item = newTag('li', content=get_package_stuff(modules_lists, packages, child))
+            children_item = newTag('li', content=get_package_stuff(modules_lists, modules_description, packages, child))
 
             # recurse ...
-            branches = get_tree(api, tree, modules_lists, packages, sym_lookup_table, rootnode=child)
+            branches = get_tree(api, tree, modules_lists, modules_description, packages, sym_lookup_table, rootnode=child)
             if branches:
                 children_item.addPiece(branches)
 
@@ -254,7 +254,7 @@ def get_tree(api, tree, modules_lists, packages, sym_lookup_table, rootnode=None
     return children_list
 
 #=============================================================================
-def print_alphabetic(mod_list, prefix, descr, fmt='html'):
+def print_alphabetic(mod_list, modules_description, prefix, descr, fmt='html'):
     items_list = sorted(mod_list)
     initials = sorted(set(item[0] for item in items_list))
     items_dict = dict((ini, [item for item in items_list if item.startswith(ini)]) for ini in initials)
@@ -277,13 +277,13 @@ def print_alphabetic(mod_list, prefix, descr, fmt='html'):
         for ini in initials:
             inner_items = []
             for mod in items_dict[ini]:
-                link = newTag('a', content=mod, attributes={"href":filename(mod), "target":'moduleFrame'})
+                link = newTag('a', content=mod, attributes={"href":filename(mod), "target":'moduleFrame', "title":modules_description[mod]})
                 inner_item = newTag('li', content=link)
                 inner_items.append(inner_item)
 
             inner_list = newTag('ul', content=inner_items)
             columns = newTag('div', content=inner_list, attributes={"class":'columns'})
-            back_link = newTag('a', content=ini.upper(), attributes={"href":'#initials'})
+            back_link = newTag('a', content=ini.upper(), attributes={"href":'#initials', "title":'[back to top]'})
             head = newTag('h4', content=back_link, id=ini.upper())
             item = newTag('li', content=[head, columns])
             items.append(item)

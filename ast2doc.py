@@ -4,7 +4,7 @@
 import sys, os
 import utils
 from landing_page import print_landingPage
-from render import printout, render_module, render_external
+from render import printout, render_module, render_external, missing_description
 
 #=============================================================================
 def main():
@@ -40,7 +40,7 @@ def main():
     statistics = {} # TODO usage_statistics(sym_lookup_table, packages)
 
     # document all modules public symbols
-    modules_lists = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
+    modules_lists, modules_description = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
 
     # mention external/intrinsic modules
     render_external(out_dir)
@@ -49,7 +49,7 @@ def main():
         return
 
     # Landing page
-    print_landingPage(out_dir, src_tree, packages, modules_lists, statistics, api, sym_lookup_table)
+    print_landingPage(out_dir, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table)
 
 #=============================================================================
 def lookup_imported_symbols(ast_dir, wanted_module, wanted_api):
@@ -98,6 +98,7 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
     src_root = os.path.normpath(os.path.commonprefix(packages.keys()))
 
     modules_lists = {'__ALL__':[], '__API__':[]}
+    modules_description = {}
     for d, p in packages.iteritems():
         rel_path = os.path.relpath(d, src_root)
         modules_lists[rel_path] = []
@@ -110,11 +111,12 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     if(utils.verbose()): print '>>>> Module: %s [%s]' % (mod_name, rel_path)
                     modules_lists[rel_path].append(mod_name)
                     modules_lists['__ALL__'].append(mod_name)
+                    modules_description[mod_name] = ast['descr'][0] if ast['descr'] else missing_description # Only 1st \brief is retained here
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
                     body = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
                     printout(body, output_dir, mod_name=mod_name)
-    return modules_lists
+    return modules_lists, modules_description
 
 #=============================================================================
 def scan_packages(src_dir):
@@ -124,7 +126,8 @@ def scan_packages(src_dir):
             content = open(os.path.join(root,"PACKAGE")).read()
             package = eval(content)
             package['files'] = [f for f in files if f.endswith(".F")]
-            packages[root] = package
+            rel_path = os.path.relpath(root, src_dir)
+            packages[rel_path] = package
     return(packages)
 
 #=============================================================================
@@ -153,7 +156,7 @@ class Tree():
         parent = self.root
         for me in rel_path.split("/"):
             self.NewNode(me, parent)
-            parent = os.path.join(parent, me)
+            parent = os.path.normpath(os.path.join(parent, me))
 
     def NewNode(self, me, parent):
         my_id = os.path.normpath(os.path.join(parent, me))
