@@ -35,9 +35,10 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     my_symbols_cat = sym_lookup_table[mod_name]['symbols_cat']
 
     # ...header
+    logo = newTag('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo', "title":"[back to start page]"})
     body_header = newTag('h2', content='Documentation for module')
     body_header.addPart('span', content=my_name, attributes={"class":"symname"})
-    body_header.addPart('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo'})
+    body_header.addPart('a', content=logo, attributes={"href":"overview-summary.html", "target":"moduleFrame"})
     body_parts = [Comment(comment), body_header]
 
     # ...module description

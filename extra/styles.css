@@ -360,6 +360,7 @@ img.logo {
     width: 100px;
     object-fit: contain;
     float: right;
+    border:0;
 }
 
 iframe.wideautoheight {
