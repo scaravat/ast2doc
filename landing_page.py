@@ -9,15 +9,16 @@ from render import filename, printout
 def print_allModules(prefix, modules_list, pkgname=None):
 
     if pkgname:
-        title_pre = ""
-        title_pkg = newTag('span', content=pkgname, attributes={"class":'pkgname'})
-        title_post = ""
-        subtitle = " modules:"
-        title = [title_pre, title_pkg, title_post, subtitle]
+        title = " ".join([pkgname, "package"])
+        pre = ""
+        pkg = newTag('span', content=pkgname, attributes={"class":'pkgname'})
+        post = " modules:"
+        heading_content = [pre, pkg, post]
     else:
         title = "All Modules:"
+        heading_content = title
 
-    heading = newTag('h2', content=title, newlines=False)
+    heading = newTag('h2', content=heading_content, newlines=False)
 
     mod_items = []
     for module in sorted(modules_list):
@@ -26,7 +27,7 @@ def print_allModules(prefix, modules_list, pkgname=None):
     mod_list = newTag('ul', content=mod_items, attributes={"class":'nobullet'})
     body = newTag('body', content=[heading, mod_list])
 
-    fileBaseName = pkgname.replace('/','%').upper()+"-frame" if pkgname else "allmodules-frame"
+    fileBaseName = pkgname.replace('/','__').upper()+"-frame" if pkgname else "allmodules-frame"
     printout(body, prefix, title=title, output_file=fileBaseName)
     return fileBaseName+'.html'
 
@@ -69,7 +70,7 @@ def getTree(tree, rootnode=None):
     branches = []
     for child in sorted(tree.GetChildren(rootnode)):
         pkgname = child.replace(tree.root,'',1)[1:]
-        link = newTag('a', content=pkgname, attributes={"href":pkgname.replace('/','%').upper()+"-frame.html", "target":"packageFrame"})
+        link = newTag('a', content=pkgname, attributes={"href":pkgname.replace('/','__').upper()+"-frame.html", "target":"packageFrame"})
         list_item = newTag('li', content=link)
         childpkglist = getTree(tree, rootnode=child)
         if childpkglist:
@@ -166,7 +167,7 @@ def get_package_stuff(modules_lists, packages, pkg_path='__ROOT__'):
     node = root if be_root else pkg_path
     rel_path = path.relpath(node, root)
     pkg_name = '[root]' if be_root else pkg_path.replace(root, '', 1)[1:]
-    pkg_id = node + '%mlist'
+    pkg_id = node + '__mlist'
     pkg_files = [f.rsplit(".", 1)[0] for f in packages[node]['files']]
     pkg_modules = [f for f in pkg_files if f in modules_lists[rel_path]]
     mlinks = [newTag('a', content=m, attributes={"href":m+".html", "target":'moduleFrame'}) for m in sorted(pkg_modules)]
