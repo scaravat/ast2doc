@@ -9,12 +9,13 @@ from render import filename, printout
 def print_allModules(prefix, modules_list, pkgname=None):
 
     if pkgname:
-        title_pre = "Modules for "
+        title_pre = ""
         title_pkg = newTag('span', content=pkgname, attributes={"class":'pkgname'})
-        title_post = " package"
-        title = [title_pre, title_pkg, title_post]
+        title_post = ""
+        subtitle = " modules:"
+        title = [title_pre, title_pkg, title_post, subtitle]
     else:
-        title = "CP2K API Modules Overview"
+        title = "All Modules:"
 
     heading = newTag('h2', content=title, newlines=False)
 
