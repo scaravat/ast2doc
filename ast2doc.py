@@ -37,7 +37,7 @@ def main():
     src_tree = build_tree(packages)
 
     # module/symbol usage statistics
-    statistics = {} # TODO usage_statistics(sym_lookup_table, packages)
+    statistics = usage_statistics(sym_lookup_table, packages)
 
     # document all modules public symbols
     modules_lists, modules_description = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
@@ -50,6 +50,43 @@ def main():
 
     # Landing page
     print_landingPage(out_dir, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table)
+
+#=============================================================================
+def usage_statistics(sym_lookup_table, packages):
+
+    counter = {'__SYMBOLS__':{}, '__MODULES__':{}}
+    for module in sym_lookup_table:
+        symmap = sym_lookup_table[module]['symbols_map']
+        my_used_modules = set()
+        for sym, smap in symmap.iteritems():
+            ext_mod, ext_sym = smap.split(':')
+            if(not ext_mod in ('__PRIV__', '__HERE__', '__EXTERNAL__')):
+                my_used_modules.add(ext_mod)
+                counter['__SYMBOLS__'].setdefault(smap, 0)
+                counter['__SYMBOLS__'][smap] += 1
+        for ext_mod in my_used_modules:
+            counter['__MODULES__'].setdefault(ext_mod, 0)
+            counter['__MODULES__'][ext_mod] += 1
+
+    statistics = {}
+    for key in ('__MODULES__', '__SYMBOLS__'):
+        statistics[key] = sorted([(k,v) for k,v in counter[key].iteritems() if v>1], key=lambda item: item[1])
+        statistics[key].reverse()
+
+    # statistics per package
+    pkgfiles = dict( (k, packages[k]['files']) for k in packages.keys() )
+    filepkg = {}
+    for k, flist in pkgfiles.iteritems():
+        filepkg.update( dict( (f[:-2].upper(), k) for f in flist ) )
+        statistics[k] = {'__MODULES__':[], '__SYMBOLS__':[]}
+    for k in ('__MODULES__', '__SYMBOLS__'):
+        for item in statistics[k]:
+            mod = item[0].split(':',1)[0] # this works in both k cases!
+            if not mod in utils.external_modules:
+                pkg = filepkg[mod]
+                statistics[pkg][k].append(item)
+
+    return statistics
 
 #=============================================================================
 def lookup_imported_symbols(ast_dir, wanted_module, wanted_api):

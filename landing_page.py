@@ -3,7 +3,7 @@
 
 from os import path
 from makeHTML import newTag
-from render import filename, printout
+from render import filename, printout, separator
 
 #=============================================================================
 def print_allModules(prefix, modules_list, modules_description, pkgname=None):
@@ -107,7 +107,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     my_indices = IofIndices()
     my_indices.Append( 'Tree', *print_logical_tree_index('__ALL__', prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table) )
     my_indices.Append( 'Index', *print_alphabetic(modules_lists['__ALL__'], modules_description, prefix, 'all') )
-   #my_indices.Append( 'Mostly used', *print_mostly_used(statistics, prefix) )
+    my_indices.Append( 'Mostly used', *print_mostly_used(statistics, modules_description, prefix) )
    #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
     my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
 
@@ -155,12 +155,88 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
 #=============================================================================
 def print_about_page(prefix):
     title = 'About CP2K API documentation'
-    fileBaseName = 'about.html'
+    fileBaseName = 'about'
     body = newTag('body', content=title)
     printout(body, prefix, title=title, output_file=fileBaseName)
     return fileBaseName+'.html', title
 
 #=============================================================================
+def get_mostly_used(statistics, modules_description, top_howmany, title_prefix):
+
+    hlevel = 'h3'
+    myTop10 = top_howmany
+    my_ranking = {'__MODULES__':statistics.pop('__MODULES__')[:myTop10], '__SYMBOLS__':statistics.pop('__SYMBOLS__')[:myTop10]}
+    if all( [len(my_ranking[k])==0 for k in '__MODULES__', '__SYMBOLS__'] ):
+        return
+
+    items = []
+
+    # mostly used modules
+    k = '__MODULES__'
+    span = newTag('span', content=title_prefix, attributes={"class":'pkgname'})
+    head = newTag(hlevel, content=[span, " mostly used modules:"], newlines=False)
+    rows = [
+        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2"})),
+        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"}))
+    ]
+    first = True
+    for what, nhits in my_ranking[k]:
+        mod = what.lower()
+        descr = modules_description[mod] if mod in modules_description else "[external module]"
+        link = newTag('a', content=mod, attributes={"href":filename(mod), "target":'moduleFrame', "title":descr})
+        hits = "hits: " if first else ""
+        hits += str(nhits) 
+        first = False
+        data = [newTag('td', content=content) for content in link, hits]
+        rows.append( newTag('tr', content=data, attributes={"class":'alternating'}) )
+    table = newTag('table', content=rows, attributes={"class":'ranking'})
+    items.append(newTag('li', content=table))
+
+    # mostly used symbols
+    k = '__SYMBOLS__'
+    head = newTag(hlevel, content=[span, " mostly used symbols:"])
+    rows = [
+        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2"})),
+        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"}))
+    ]
+    first = True
+    for what, nhits in my_ranking[k]:
+        mod, sym = what.lower().split(':')
+        descr = modules_description[mod] if mod in modules_description else "[external module]"
+        mod_link = newTag('a', content=mod, attributes={"href":filename(mod), "target":'moduleFrame', "title":descr})
+        sym_link = newTag('a', content=sym, attributes={"href":filename(mod, hashtag=sym), "target":'moduleFrame'})
+        links = [mod_link, separator, sym_link]
+        hits = "hits: " if first else ""
+        hits += str(nhits) 
+        first = False
+        data = [newTag('td', content=content) for content in links, hits]
+        rows.append( newTag('tr', content=data, attributes={"class":'alternating'}) )
+    table = newTag('table', content=rows, attributes={"class":'ranking'})
+    items.append(newTag('li', content=table))
+
+    my_list = newTag('ul', content=items)
+    columns = newTag('div', content=my_list, attributes={"class":'columns'})
+
+    return(columns)
+
+#=============================================================================
+def print_mostly_used(statistics, modules_description, prefix):
+
+    body_parts = []
+    columns = get_mostly_used(statistics, modules_description, top_howmany=20, title_prefix="Overall")
+    body_parts.append(columns)
+
+    for pkg in sorted(statistics.keys()):
+        columns = get_mostly_used(statistics[pkg], modules_description, top_howmany=5, title_prefix=pkg)
+        if columns:
+            body_parts.append(columns)
+
+    title = "Mostly used modules/symbols statistics"
+    fileBaseName = 'mostly_used'
+    body = newTag('body', content=body_parts)
+    printout(body, prefix, title=title, output_file=fileBaseName)
+    return fileBaseName+'.html', title
+
 def get_package_stuff(modules_lists, modules_description, packages, pkg_path='__ROOT__'):
     root = path.normpath(path.commonprefix(packages.keys())) 
     be_root = pkg_path=='__ROOT__'
