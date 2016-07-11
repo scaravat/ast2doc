@@ -13,6 +13,7 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     if(my_name in sym_lookup_table):
         return
 
+    my_own_pubs = []
     my_sym_map = {}
     my_sym_cat = {}
     if verbose(): print '%sCaching: "%s"' % ('  '*level, my_name)
@@ -23,6 +24,7 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
         for cat in 'functions', 'subroutines', 'interfaces', 'types', 'variables':
             names = set(f['name'] for f in ast[cat])
             for sym in names.intersection(my_pubs):
+                my_own_pubs.append(sym)
                 my_sym_map[sym] = ':'.join(['__HERE__', sym])
                 my_sym_cat[sym] = cat
             # private symbols as well
@@ -62,7 +64,8 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
         'symbols_map':my_sym_map,
         'symbols_cat':my_sym_cat,
         'umap':umap,
-        'symbols_forwarded':symbols_forwarded
+        'symbols_forwarded':symbols_forwarded,
+        'my_symbols':sorted(my_own_pubs)
     }
 
 #=============================================================================
