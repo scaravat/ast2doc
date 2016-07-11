@@ -118,9 +118,9 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     noframe = newTag('p', content="Your browser does not support iframes.")
     index_iframe = newTag('iframe', content=noframe, attributes={
         "src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "id":"OverviewFrame", "class":'wideautoheight',
-        "onload":"javascript:getActive()", "onpopstate":"javascript:debugActive()"
+        "onload":"javascript:getActive()"
     })
-    body = newTag('body', content=[banner, index_iframe])#, attributes={"onpopstate":"javascript:getActive()"})
+    body = newTag('body', content=[banner, index_iframe])
 
     fileBaseName = "overview-summary"
     printout(body, prefix, title="Overview", output_file=fileBaseName, jscript="active.js")
@@ -146,11 +146,11 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
     noframes = newTag('noframes', content=[noscript, heading, paragrph])
 
     inner_frameset = newTag('frameset', content=[packageListFrame, packageFrame], attributes={
-        "rows":"30%,70%", "title":"Left frames", "onload":"top.loadFrames()"})
+        "rows":"50%,50%", "title":"Left frames", "onload":"top.loadFrames()"})
     outer_frameset = newTag('frameset', content=[inner_frameset, moduleFrame, noframes], attributes={
         "cols":"20%,80%", "title":"Documentation frame", "onload":"top.loadFrames()"})
 
-    printout(outer_frameset, prefix, title=title, output_file="index", jscript="searchURL.js")
+    printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "searchURL.js"])
 
 #=============================================================================
 def print_about_page(prefix):

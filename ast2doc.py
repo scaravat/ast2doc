@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, os
+import sys, os, json
 import utils
 from landing_page import print_landingPage
 from render import printout, render_module, render_external, missing_description
@@ -28,6 +28,9 @@ def main():
 
     # pre compute the lookup table of imported symbols
     sym_lookup_table = lookup_imported_symbols(ast_dir, wanted_module, wanted_api)
+
+    # dump modules and own publics lists in JSON
+    dump_modules_publics(sym_lookup_table, out_dir)
 
     # get API symbols & modules
     api = get_api(wanted_api, ast_dir, sym_lookup_table)
@@ -154,6 +157,16 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     body = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
                     printout(body, output_dir, mod_name=mod_name)
     return modules_lists, modules_description
+
+#=============================================================================
+def dump_modules_publics(sym_lookup_table, out_dir):
+    mdump = json.dumps(sym_lookup_table.keys(), sort_keys=True).lower()
+    sdump = json.dumps(dict( (s, m) for m in sym_lookup_table for s in sym_lookup_table[m]['my_symbols'] )).lower()
+
+    f = open(os.path.join(out_dir, 'modules_publics.json'), 'w')
+    f.write("modules = '" + mdump + "'\n")
+    f.write("symbols = '" + sdump + "'\n")
+    f.close()
 
 #=============================================================================
 def scan_packages(src_dir):
