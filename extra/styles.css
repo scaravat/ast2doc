@@ -3,7 +3,7 @@
  */
 
 body {
-//  font-size: 110%;
+/*  font-size: 110%; */
     font-family: "Liberation Serif";
 }
 
@@ -100,9 +100,9 @@ table.arglist {
     text-align: center;
 }
 td.argname {
-//  width: 250px;
     font-family: courier; /*monospace;*/
-//  padding-left:15px;
+/*  width: 250px;
+    padding-left:15px; */
 }
 td.api_symbol {
     width: 400px;
@@ -117,7 +117,7 @@ td.intent {
     text-align: center;
 }
 td.vtype {
-//  width:400px;
+/*  width:400px; */
     padding-right: 0.5em;
     padding-left: 0.5em;
     font-style: oblique;
@@ -137,7 +137,7 @@ td.misc_attrs {
 }
 
 table.argdescrheading {
-//  table-layout:fixed;
+/*  table-layout:fixed; */
 }
 dl.argsdescr {
 /*  padding:10px;*/
@@ -257,7 +257,7 @@ ul.navlist li a:hover:not(.active) {
 .tooltip .tooltiptext {
     visibility: hidden;
     background-color: #CCCCFF;
-//  color: #fff;
+/*  color: #fff; */
     text-align: center;
     padding: 4px 1em;
     border-radius: 4px;
@@ -378,7 +378,7 @@ iframe.wideautoheight {
     margin: 0px;
     display: none;
     font-family: monospace;
-  //height: 6em;
+/*  height: 6em; */
     max-height: 6em;
     object-fit: contain;
     overflow-y:auto;
