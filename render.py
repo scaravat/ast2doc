@@ -782,7 +782,10 @@ def render_vartype(vtype, symmap, referenced_private_syms):
                         symmap[item] = ':'.join(["__REFERENCED_PRIV__", remote_sym])
                         what = "TYPES" if var_type == "TYPE" else "PARAMS"
                         referenced_private_syms[what].append(item)
-                    pieces.append(newTag('a', content=item.lower(), attributes={"href":filename(owner_module.lower(), hashtag=remote_sym.lower())}))
+                    attributes = {"href":filename(owner_module.lower(), hashtag=remote_sym.lower())}
+                    if (item != remote_sym):
+                        attributes["title"] = "target: "+"::".join([owner_module, remote_sym]).lower()
+                    pieces.append(newTag('a', content=item.lower(), attributes=attributes))
                 else:
                     pieces.append(item.lower())
             pieces.append(')')
