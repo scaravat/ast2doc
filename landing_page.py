@@ -82,7 +82,7 @@ def getTree(tree, packages, rootnode=None):
         return pkglist
 
 #=============================================================================
-def get_banner(indices):
+def get_banner(indices, prefix):
 
     buttons = []
     for i, basename in enumerate(indices.l2sort):
@@ -91,14 +91,35 @@ def get_banner(indices):
         button_id = 'button_' + basename
         target_href = basename + ".html"
         href = "javascript:setActive('"+basename+"')"
-        link = newTag('a', content=button_name, attributes={"id":button_id, "href":href})
+        link = newTag('a', content=button_name, attributes={"id":button_id, "href":href, "title":my_title})
         buttons.append( newTag('li', content=link) )
+
+    # last two buttons are swapped since they're right-flushed!
+    #  .. about
+    target_href, my_title = print_about_page(prefix)
+    basename = target_href.rsplit('.',1)[0]
+    button_id = 'button_' + basename
+    href = "javascript:setActive('"+basename+"')"
+    link = newTag('a', content="About", attributes={"id":button_id, "href":href, "title":my_title})
+    buttons.append( newTag('li', content=link) )
+    #  .. quick search
+    link = newTag('a', content="Quick search", attributes={"href":'#', "class":"dropbtn"})
+    form_items = [
+        newTag('input', attributes={"type":"text", "name":"whois", "placeholder":"e.g.: dbcsr_frobenius_norm"}), newTag('br'),
+        newTag('input', attributes={"type":"radio", "name":"whatis", "value":"symbol", "checked":None}), "symbol", newTag('br'),
+        newTag('input', attributes={"type":"radio", "name":"whatis", "value":"module"}), "module", #newTag('br'),
+        newTag('input', attributes={"type":"submit", "value":"GO!", "style":"float: right;"})
+    ]
+    form = newTag('form', content=form_items, attributes={"action":"index.html", "method":'get', "target":"_top"}, newlines=False)
+    dropdown_content = newTag('div', content=form, attributes={"class":"dropdown-content"}, newlines=False)
+    buttons.append( newTag('li', content=[link, dropdown_content], attributes={"class":'dropdown'}) )
+
     buttons_list = newTag('ul', content=buttons, attributes={"class":'navlist'})
 
     CP2kAPIlogo = newTag('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo'})
     header = newTag('h1', content=["CP2K API-Documentation", CP2kAPIlogo], newlines=False)
     spacer = newTag('div', content='&nbsp;', attributes={"class":'clearfix'}, newlines=False)
-    banner = newTag('div', content=[header, buttons_list, spacer], newlines=False)
+    banner = newTag('div', content=[header, buttons_list, spacer])
     return banner
 
 #=============================================================================
@@ -111,10 +132,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
    #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
     my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
 
-    # last `index' is "About"
-    my_indices.Append( 'About', *print_about_page(prefix) )
-
-    banner = get_banner(my_indices)
+    banner = get_banner(my_indices, prefix)
     noframe = newTag('p', content="Your browser does not support iframes.")
     index_iframe = newTag('iframe', content=noframe, attributes={
         "src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "id":"OverviewFrame", "class":'wideautoheight',
