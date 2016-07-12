@@ -25,7 +25,7 @@
         var parentLI = lnk.parentElement;       if (checkElement(parentLI, 'LI') !== 0) {return "Error -3";}
         var grandpaUL = parentLI.parentElement; if (checkElement(grandpaUL, 'UL') !== 0) {return "Error -4";}
         var nItems = grandpaUL.childElementCount;
-        for (i = 0; i < nItems; i++) {
+        for (i = 0; i < nItems-1; i++) {
             var nextLI = grandpaUL.children[i]; if (checkElement(nextLI, 'LI') !== 0 || nextLI.childElementCount !== 1) {return "Error -5";}
             var nextA = nextLI.children[0];     if (checkElement(nextA, 'A') !== 0) {return "Error -6";}
             if (nextA.id === id) {

@@ -57,21 +57,45 @@
                     return false;
                 }
             }
-        } else if (url.startsWith("module=")) {
-            var moduleName = url.substring(7);
-            if (myModules.indexOf(moduleName) !== -1) return moduleName + ".html";
-            return false;
-        } else if (url.startsWith("symbol=")) {
-            var symbolName = url.substring(7);
-            if (mySymbols.indexOf(symbolName) !== -1) {
-                var moduleName = mySymbolsMod[symbolName];
-                return moduleName + ".html" + "#" + symbolName;
-            }
-            return false;
         } else {
+            var moduleName, symbolName;
+            var searchObj = searchUrlToObj(url);
+            var keyWords = searchObj.keyWords;
+            var keysCheck = ["whatis", "whois"];
+            var is_ok = (keyWords.length == keysCheck.length) && keyWords.every(function(element, index) {
+                return element === keysCheck[index]; 
+            });
+            if (!is_ok) {
+                return false;
+            } else if (searchObj.whatis === "module") {
+                moduleName = searchObj.whois;
+                if (myModules.indexOf(moduleName) !== -1) {
+                    return moduleName + ".html";
+                }
+            } else if (searchObj.whatis === "symbol" && mySymbols.indexOf(searchObj.whois) !== -1) {
+                symbolName = searchObj.whois;
+                if (mySymbols.indexOf(symbolName) !== -1) {
+                    moduleName = mySymbolsMod[symbolName];
+                    return moduleName + ".html" + "#" + symbolName;
+                }
+            }
             return false;
         }
         return url;
+    }
+
+    function searchUrlToObj(url) {
+        var searchItems = url.split('&');
+        var searchObj = {"keyWords":[]};
+        var i, item, key, val;
+        for (i in searchItems) {
+            item = searchItems[i].split("=");
+            key = item[0]; val = item[1];
+            n = searchObj.keyWords.push(key);
+            searchObj[key] = val;
+        }
+        searchObj.keyWords.sort()
+        return searchObj;
     }
 
     function loadFrames() {
