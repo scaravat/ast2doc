@@ -103,7 +103,7 @@ def get_banner(indices, prefix):
     link = newTag('a', content="About", attributes={"id":button_id, "href":href, "title":my_title})
     buttons.append( newTag('li', content=link) )
     #  .. quick search
-    link = newTag('a', content="Quick search", attributes={"href":'#', "class":"dropbtn"})
+    link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
     form_items = [
         newTag('input', attributes={"type":"text", "name":"whois", "placeholder":"e.g.: dbcsr_frobenius_norm"}), newTag('br'),
         newTag('input', attributes={"type":"radio", "name":"whatis", "value":"symbol", "checked":None}), "symbol", newTag('br'),
@@ -111,7 +111,7 @@ def get_banner(indices, prefix):
         newTag('input', attributes={"type":"submit", "value":"GO!", "style":"float: right;"})
     ]
     form = newTag('form', content=form_items, attributes={"action":"index.html", "method":'get', "target":"_top"}, newlines=False)
-    dropdown_content = newTag('div', content=form, attributes={"class":"dropdown-content"}, newlines=False)
+    dropdown_content = newTag('div', content=form, attributes={"id":"qsearch_dropdown", "class":"dropdown-content"}, newlines=False)
     buttons.append( newTag('li', content=[link, dropdown_content], attributes={"class":'dropdown'}) )
 
     buttons_list = newTag('ul', content=buttons, attributes={"class":'navlist'})
@@ -141,7 +141,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     body = newTag('body', content=[banner, index_iframe])
 
     fileBaseName = "overview-summary"
-    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript="active.js")
+    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["active.js", "showhide.js"])
     return fileBaseName+'.html'
 
 #=============================================================================

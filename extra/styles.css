@@ -402,10 +402,6 @@ a.dropbtn {
     text-decoration: none;
 }
 
-li.dropdown a:hover, .dropdown:hover .dropbtn {
-    background-color: red;
-}
-
 li.dropdown {
     display: inline-block;
 }
@@ -425,10 +421,4 @@ li.dropdown {
     text-decoration: none;
     display: block;
     text-align: left;
-}
-
-.dropdown-content a:hover {background-color: #f1f1f1}
-
-.dropdown:hover .dropdown-content {
-    display: block;
 }
