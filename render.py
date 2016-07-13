@@ -38,7 +38,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     logo = newTag('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo', "title":"[back to start page]"})
     body_header = newTag('h2', content='Documentation for module')
     body_header.addPart('span', content=my_name, attributes={"class":"symname"})
-    body_header.addPart('a', content=logo, attributes={"href":"overview-summary.html", "target":"moduleFrame"})
+    body_header.addPart('a', content=logo, attributes={"href":"index.html", "target":"_top"})
     body_parts = [Comment(comment), body_header]
 
     # ...module description
@@ -366,7 +366,7 @@ def interfaces_summary(names, intfcs, symmap):
 
             bg_color  = '#f2f2f2' if yes else 'white'
             yes = not yes
-            gen_link = newTag('a', content=ifname.lower(), attributes={"href":'#'+ifname.lower()})
+            gen_link = newTag('a', content=ifname.lower(), id='_SUMMARY_'+ifname.lower(), attributes={"href":'#'+ifname.lower()})
             generic_sym  = newTag('div', content=gen_link, newlines=False, attributes={"style":'font-weight:bold; padding:5px;'})
             specific_div = newTag('div', content=items, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
             sym_divs.append( newTag('div', content=[generic_sym, specific_div], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
@@ -442,7 +442,7 @@ def routines_summary(names, subs, funs, symmap, referenced_private_syms):
             tooltip = newTag('div', content=[tag, tooltiptext], attributes={"class":'tooltip'})
         else:
             tooltip = newTag('div', content=tag, attributes={"style":'display:inline-block;'})
-        div_pieces = [tooltip, ' ', newTag('a', content=sym_name, attributes={"href":'#'+sym_name}), ' ']
+        div_pieces = [tooltip, ' ', newTag('a', content=sym_name, id='_SUMMARY_'+sym_name, attributes={"href":'#'+sym_name}), ' ']
 
         if(arglist):
             div_pieces.append('(')
@@ -669,7 +669,7 @@ def types_summary(typenames, ast):
         t = ast[alltypenames.index(sym)]
         assert(sym == t['name'])
         my_descr = t['descr'] if t['descr'] else missing_description
-        link = newTag('a', content=sym.lower(), attributes={"href":'#'+sym.lower()})
+        link = newTag('a', content=sym.lower(), id='_SUMMARY_'+sym.lower(), attributes={"href":'#'+sym.lower()})
 
         bg_color  = '#f2f2f2' if i%2==1 else 'white'
         type_div  = newTag('div', content=link, newlines=False, attributes={"style":'font-weight:bold; padding:5px;'})
