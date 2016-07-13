@@ -65,18 +65,22 @@
             var is_ok = (keyWords.length == keysCheck.length) && keyWords.every(function(element, index) {
                 return element === keysCheck[index]; 
             });
-            if (!is_ok) {
-                return false;
-            } else if (searchObj.whatis === "module") {
+            if (!is_ok) return false;
+            if (searchObj.whatis === "module") {
                 moduleName = searchObj.whois;
                 if (myModules.indexOf(moduleName) !== -1) {
                     return moduleName + ".html";
                 }
-            } else if (searchObj.whatis === "symbol" && mySymbols.indexOf(searchObj.whois) !== -1) {
+            } else if (searchObj.whatis === "symbol") {
                 symbolName = searchObj.whois;
                 if (mySymbols.indexOf(symbolName) !== -1) {
-                    moduleName = mySymbolsMod[symbolName];
-                    return moduleName + ".html" + "#" + symbolName;
+                    var moduleList = mySymbolsMod[symbolName];
+                    if (moduleList.length === 1) {
+                        moduleName = moduleList[0];
+                        return moduleName + ".html" + "#" + symbolName;
+                    } else {
+                        return "disambiguation.html#" + symbolName;
+                    }
                 }
             }
             return false;

@@ -3,7 +3,7 @@
 
 import sys, os, json
 import utils
-from landing_page import print_landingPage
+from landing_page import print_landingPage, print_disambiguationPage
 from render import printout, render_module, render_external, missing_description
 
 #=============================================================================
@@ -30,7 +30,7 @@ def main():
     sym_lookup_table = lookup_imported_symbols(ast_dir, wanted_module, wanted_api)
 
     # dump modules and own publics lists in JSON
-    dump_modules_publics(sym_lookup_table, out_dir)
+    symbols_db = dump_modules_publics(sym_lookup_table, out_dir)
 
     # get API symbols & modules
     api = get_api(wanted_api, ast_dir, sym_lookup_table)
@@ -53,6 +53,9 @@ def main():
 
     # Landing page
     print_landingPage(out_dir, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table)
+
+    # Disambiguation page
+    print_disambiguationPage(symbols_db, modules_description, out_dir)
 
 #=============================================================================
 def usage_statistics(sym_lookup_table, packages):
@@ -160,13 +163,21 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
 
 #=============================================================================
 def dump_modules_publics(sym_lookup_table, out_dir):
+
+    # modules DB
     mdump = json.dumps(sym_lookup_table.keys(), sort_keys=True).lower()
-    sdump = json.dumps(dict( (s, m) for m in sym_lookup_table for s in sym_lookup_table[m]['my_symbols'] )).lower()
+
+    # symbols DB
+    syms = {}
+    dummy = [syms.setdefault(s, []).append(m) for m in sym_lookup_table for s in sym_lookup_table[m]['my_symbols']]
+    sdump = json.dumps(syms).lower()
 
     f = open(os.path.join(out_dir, 'modules_publics.json'), 'w')
     f.write("modules = '" + mdump + "'\n")
     f.write("symbols = '" + sdump + "'\n")
     f.close()
+
+    return syms
 
 #=============================================================================
 def scan_packages(src_dir):

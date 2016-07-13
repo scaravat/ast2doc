@@ -91,7 +91,7 @@ def get_banner(indices, prefix):
         button_id = 'button_' + basename
         target_href = basename + ".html"
         href = "javascript:setActive('"+basename+"')"
-        link = newTag('a', content=button_name, attributes={"id":button_id, "href":href, "title":my_title})
+        link = newTag('a', content=button_name, id=button_id, attributes={"href":href, "title":my_title})
         buttons.append( newTag('li', content=link) )
 
     # last two buttons are swapped since they're right-flushed!
@@ -100,7 +100,7 @@ def get_banner(indices, prefix):
     basename = target_href.rsplit('.',1)[0]
     button_id = 'button_' + basename
     href = "javascript:setActive('"+basename+"')"
-    link = newTag('a', content="About", attributes={"id":button_id, "href":href, "title":my_title})
+    link = newTag('a', content="About", id=button_id, attributes={"href":href, "title":my_title})
     buttons.append( newTag('li', content=link) )
     #  .. quick search
     link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
@@ -111,7 +111,7 @@ def get_banner(indices, prefix):
         newTag('input', attributes={"type":"submit", "value":"GO!", "style":"float: right;"})
     ]
     form = newTag('form', content=form_items, attributes={"action":"index.html", "method":'get', "target":"_top"}, newlines=False)
-    dropdown_content = newTag('div', content=form, attributes={"id":"qsearch_dropdown", "class":"dropdown-content"}, newlines=False)
+    dropdown_content = newTag('div', content=form, id="qsearch_dropdown", attributes={"class":"dropdown-content"}, newlines=False)
     buttons.append( newTag('li', content=[link, dropdown_content], attributes={"class":'dropdown'}) )
 
     buttons_list = newTag('ul', content=buttons, attributes={"class":'navlist'})
@@ -134,10 +134,9 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
 
     banner = get_banner(my_indices, prefix)
     noframe = newTag('p', content="Your browser does not support iframes.")
-    index_iframe = newTag('iframe', content=noframe, attributes={
-        "src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "id":"OverviewFrame", "class":'wideautoheight',
-        "onload":"javascript:getActive()"
-    })
+    index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
+        attributes={"src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "class":'wideautoheight', "onload":"javascript:getActive()"}
+    )
     body = newTag('body', content=[banner, index_iframe])
 
     fileBaseName = "overview-summary"
@@ -255,6 +254,7 @@ def print_mostly_used(statistics, modules_description, prefix):
     printout(body, prefix, title=title, output_file=fileBaseName)
     return fileBaseName+'.html', title
 
+#=============================================================================
 def get_package_stuff(modules_lists, modules_description, packages, pkg_path='__ROOT__'):
     root = path.normpath(path.commonprefix(packages.keys())) 
     be_root = pkg_path=='__ROOT__'
@@ -444,6 +444,32 @@ def print_alphabetic_index_(api, prefix, fmt='html'):
         assert(False) # Unknown format
 
     return fn+".html", title
+
+#=============================================================================
+def print_disambiguationPage(symbols_db, modules_description, prefix):
+
+    title = "Disambiguation Page"
+    heading = newTag('h2', content=title)
+    subhead = newTag('h4', content="This disambiguation page lists modules that share the same name for a public symbol")
+    body_parts = [heading, subhead]
+
+    todo_list = sorted(s for s in symbols_db if len(symbols_db[s])>1)
+    for s in todo_list:
+        symbol = s.lower()
+        owner_modules = symbols_db[s]
+        items = []
+        for m in owner_modules:
+            module = m.lower()
+            link = newTag('a', content=module, attributes={"href":filename(module, hashtag=symbol), "title":modules_description[module]})
+            items.append(newTag('li', content=link))
+        sname = newTag('span', content=symbol, id=symbol, attributes={"class":"symname"})
+        p = newTag('p', content=[sname, " symbol found in "+str(len(owner_modules))+" modules:"])
+        l = newTag('ul', content=items, attributes={"class":"horizontal", "style":'padding-top: 0;'})
+        body_parts.extend([p, l])
+
+    body = newTag('body', content=body_parts)
+    fileBaseName = "disambiguation"
+    printout(body, prefix, title=title, output_file=fileBaseName)
 
 #=============================================================================
 class IofIndices():
