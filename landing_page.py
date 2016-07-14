@@ -90,8 +90,7 @@ def get_banner(indices, prefix):
         button_name = indices.brief[i]
         button_id = 'button_' + basename
         target_href = basename + ".html"
-        href = "javascript:setActive('"+basename+"')"
-        link = newTag('a', content=button_name, id=button_id, attributes={"href":href, "title":my_title})
+        link = newTag('a', content=button_name, id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
         buttons.append( newTag('li', content=link) )
 
     # last two buttons are swapped since they're right-flushed!
@@ -99,8 +98,7 @@ def get_banner(indices, prefix):
     target_href, my_title = print_about_page(prefix)
     basename = target_href.rsplit('.',1)[0]
     button_id = 'button_' + basename
-    href = "javascript:setActive('"+basename+"')"
-    link = newTag('a', content="About", id=button_id, attributes={"href":href, "title":my_title})
+    link = newTag('a', content="About", id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
     buttons.append( newTag('li', content=link) )
     #  .. quick search
     link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
@@ -135,7 +133,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     banner = get_banner(my_indices, prefix)
     noframe = newTag('p', content="Your browser does not support iframes.")
     index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
-        attributes={"src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "class":'wideautoheight', "onload":"javascript:getActive()"}
+        attributes={"src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "class":'wideautoheight'}
     )
     body = newTag('body', content=[banner, index_iframe])
 
@@ -173,8 +171,8 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
 def print_about_page(prefix):
     title = 'About CP2K API documentation'
     fileBaseName = 'about'
-    body = newTag('body', content=title)
-    printout(body, prefix, title=title, output_file=fileBaseName)
+    body = newTag('body', content=title, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
     return fileBaseName+'.html', title
 
 #=============================================================================
@@ -250,8 +248,8 @@ def print_mostly_used(statistics, modules_description, prefix):
 
     title = "Mostly used modules/symbols statistics"
     fileBaseName = 'mostly_used'
-    body = newTag('body', content=body_parts)
-    printout(body, prefix, title=title, output_file=fileBaseName)
+    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
     return fileBaseName+'.html', title
 
 #=============================================================================
@@ -283,7 +281,6 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_descr
         title = 'Logical tree index of DBCSR API symbols'
 
     if(fmt=='html'):
-
         heading = newTag('h2', content=title, attributes={"class":'index_title'})
 
         root_item = newTag('li', content=get_package_stuff(modules_lists, modules_description, packages))
@@ -292,16 +289,15 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_descr
         assert(branches)
         root_item.addPiece(branches)
 
+        fileBaseName = "tree_index" if api == '__ALL__' else "API_tree_index"
         outer_list = newTag('ul', content=root_item, attributes={"class":'nobullet'})
-        body = newTag('body', content=[heading, outer_list])
-
-        fn = "tree_index" if api == '__ALL__' else "API_tree_index"
-        printout(body, prefix, title=title, output_file=fn, jscript="showhide.js")
+        body = newTag('body', content=[heading, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+        printout(body, prefix, title=title, output_file=fileBaseName, jscript=["active.js", "showhide.js"])
 
     else:
         assert(False) # Unknown format
 
-    return fn+".html", title
+    return fileBaseName+".html", title
 
 #=============================================================================
 def get_tree(api, tree, modules_lists, modules_description, packages, sym_lookup_table, rootnode=None):
@@ -383,16 +379,14 @@ def print_alphabetic(mod_list, modules_description, prefix, descr, fmt='html'):
             items.append(item)
         outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
 
-        body_parts = [heading, ini_list, outer_list]
-        body = newTag('body', content=body_parts)
-
-        fn = "alphabetic_index_"+'_'.join(descr.split())
-        printout(body, prefix, title=title, output_file=fn)
+        fileBaseName = "alphabetic_index_"+'_'.join(descr.split())
+        body = newTag('body', content=[heading, ini_list, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+        printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
 
     else:
         assert(False) # Unknown format
 
-    return fn+".html", title
+    return fileBaseName+".html", title
 
 #=============================================================================
 def print_alphabetic_index_(api, prefix, fmt='html'):
