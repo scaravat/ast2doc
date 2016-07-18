@@ -168,10 +168,15 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
     printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "js/searchURL.js"])
 
 #=============================================================================
+import time
 def print_about_page(prefix):
     title = 'About CP2K API documentation'
+    heading = newTag('h3', content=title)
+    time_now  = time.strftime("%c")
+    time_zone = time.tzname[time.daylight]
+    time_info = " ".join(["Last update:", time_now, time_zone]) #Last modified: 2016/04/08 12:11
     fileBaseName = 'about'
-    body = newTag('body', content=title, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    body = newTag('body', content=[heading, time_info], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
     printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html', title
 
