@@ -138,7 +138,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     body = newTag('body', content=[banner, index_iframe])
 
     fileBaseName = "overview-summary"
-    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["active.js", "showhide.js"])
+    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
     return fileBaseName+'.html'
 
 #=============================================================================
@@ -165,14 +165,14 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
     outer_frameset = newTag('frameset', content=[inner_frameset, moduleFrame, noframes], attributes={
         "cols":"20%,80%", "title":"Documentation frame", "onload":"top.loadFrames()"})
 
-    printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "searchURL.js"])
+    printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "js/searchURL.js"])
 
 #=============================================================================
 def print_about_page(prefix):
     title = 'About CP2K API documentation'
     fileBaseName = 'about'
     body = newTag('body', content=title, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-    printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html', title
 
 #=============================================================================
@@ -249,7 +249,7 @@ def print_mostly_used(statistics, modules_description, prefix):
     title = "Mostly used modules/symbols statistics"
     fileBaseName = 'mostly_used'
     body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-    printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html', title
 
 #=============================================================================
@@ -292,7 +292,7 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_descr
         fileBaseName = "tree_index" if api == '__ALL__' else "API_tree_index"
         outer_list = newTag('ul', content=root_item, attributes={"class":'nobullet'})
         body = newTag('body', content=[heading, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-        printout(body, prefix, title=title, output_file=fileBaseName, jscript=["active.js", "showhide.js"])
+        printout(body, prefix, title=title, output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
 
     else:
         assert(False) # Unknown format
@@ -381,7 +381,7 @@ def print_alphabetic(mod_list, modules_description, prefix, descr, fmt='html'):
 
         fileBaseName = "alphabetic_index_"+'_'.join(descr.split())
         body = newTag('body', content=[heading, ini_list, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-        printout(body, prefix, title=title, output_file=fileBaseName, jscript="active.js")
+        printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
 
     else:
         assert(False) # Unknown format
