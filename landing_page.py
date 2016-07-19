@@ -183,21 +183,19 @@ def print_about_page(prefix):
 #=============================================================================
 def get_mostly_used(statistics, modules_description, top_howmany, title_prefix):
 
-    hlevel = 'h3'
+    hlevel = 'h4'
     myTop10 = top_howmany
     my_ranking = {'__MODULES__':statistics.pop('__MODULES__')[:myTop10], '__SYMBOLS__':statistics.pop('__SYMBOLS__')[:myTop10]}
     if all( [len(my_ranking[k])==0 for k in '__MODULES__', '__SYMBOLS__'] ):
         return
 
-    items = []
-
     # mostly used modules
     k = '__MODULES__'
     span = newTag('span', content=title_prefix, attributes={"class":'pkgname'})
-    head = newTag(hlevel, content=[span, " mostly used modules:"], newlines=False)
+    head = newTag(hlevel, content="modules:", newlines=False)
     rows = [
-        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2"})),
-        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"}))
+        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"})),
+        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2", "style":"float: left;"}))
     ]
     first = True
     for what, nhits in my_ranking[k]:
@@ -209,15 +207,14 @@ def get_mostly_used(statistics, modules_description, top_howmany, title_prefix):
         first = False
         data = [newTag('td', content=content) for content in link, hits]
         rows.append( newTag('tr', content=data, attributes={"class":'alternating'}) )
-    table = newTag('table', content=rows, attributes={"class":'ranking'})
-    items.append(newTag('li', content=table))
+    m_table = newTag('table', content=rows, attributes={"class":'ranking'})
 
     # mostly used symbols
     k = '__SYMBOLS__'
-    head = newTag(hlevel, content=[span, " mostly used symbols:"])
+    head = newTag(hlevel, content="symbols:")
     rows = [
-        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2"})),
-        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"}))
+        newTag('tr', content=newTag('th', content='&nbsp;', attributes={"colspan":"2"})),
+        newTag('tr', content=newTag('th', content=head, attributes={"colspan":"2", "style":"float: left;"}))
     ]
     first = True
     for what, nhits in my_ranking[k]:
@@ -231,29 +228,37 @@ def get_mostly_used(statistics, modules_description, top_howmany, title_prefix):
         first = False
         data = [newTag('td', content=content) for content in links, hits]
         rows.append( newTag('tr', content=data, attributes={"class":'alternating'}) )
-    table = newTag('table', content=rows, attributes={"class":'ranking'})
-    items.append(newTag('li', content=table))
+    s_table = newTag('table', content=rows, attributes={"class":'ranking'})
 
-    my_list = newTag('ul', content=items)
-    columns = newTag('div', content=my_list, attributes={"class":'columns'})
+    hlevel = 'h3'
+    data = [ newTag('td', content=item) for item in newTag(hlevel, content=span), m_table, s_table ]
+    outer_row = newTag('tr', content=data, attributes={"class":"mostly_used_table_row"})
 
-    return(columns)
+    return(outer_row)
 
 #=============================================================================
 def print_mostly_used(statistics, modules_description, prefix):
 
-    body_parts = []
-    columns = get_mostly_used(statistics, modules_description, top_howmany=20, title_prefix="Overall")
-    body_parts.append(columns)
+    head0 = newTag('h3', content="Overall statistics:")
+    row0 = newTag('tr', content=newTag('th', content=head0, attributes={"colspan":"3", "style":"float: left;"}))
+    row = get_mostly_used(statistics, modules_description, top_howmany=20, title_prefix="")
+    rows = [row0, row]
 
+    head1 = newTag('h3', content="Per-package statistics:")
+    row1 = newTag('tr', content=newTag('th', content=head1, attributes={"colspan":"3", "style":"float: left;"}))
+    rows.append(row1)
     for pkg in sorted(statistics.keys()):
-        columns = get_mostly_used(statistics[pkg], modules_description, top_howmany=5, title_prefix=pkg)
-        if columns:
-            body_parts.append(columns)
+        title_prefix="[root]" if pkg=="." else pkg
+        row = get_mostly_used(statistics[pkg], modules_description, top_howmany=5, title_prefix=title_prefix)
+        if row:
+            rows.append(row)
+
+    table = newTag('table', content=rows, attributes={"class":"mostly_used_table"})
 
     title = "Mostly used modules/symbols statistics"
+    heading = newTag('h2', content=title, attributes={"class":'index_title'})
     fileBaseName = 'mostly_used'
-    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    body = newTag('body', content=[heading, table], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
     printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html', title
 

@@ -391,9 +391,15 @@ iframe.wideautoheight {
 table.ranking {
     border: 0;
     border-collapse: collapse;
+    display: inline-block;
 }
 table.ranking tr td { padding: 5px 10px; }
 table.ranking tr td:last-child { float: right; }
+table.ranking { padding-bottom: 20px; }
+
+table.mostly_used_table { border-collapse: collapse; }
+table.mostly_used_table tr.mostly_used_table_row { border-bottom: 2px solid gray; }
+table.mostly_used_table tr.mostly_used_table_row > td { padding-left: 20px; vertical-align: top}
 
 a.dropbtn {
     display: inline-block;
