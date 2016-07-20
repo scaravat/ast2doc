@@ -9,6 +9,8 @@ import utils
 missing_description = '...'
 separator = ' :: '
 ruler = newTag('hr')
+back_to_top_char = newTag('b', content="^", attributes={"class":'back_to_top'})
+top_link = newTag('div', content=newTag('a', content=back_to_top_char, attributes={"href":"#"}), attributes={"class":"toplink"})
 
 #=============================================================================
 #   M O D U L E   (main rendering function)
@@ -197,6 +199,7 @@ def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table, reference
 
     header = newTag('h4', content='Generic procedure ')
     header.addPart('span', content=my_name, attributes={"class":"symname"})
+    header.addPiece(top_link)
     my_body = newTag('div', content=[Comment(comment), header, specifics], attributes={"class":'box', "style":'overflow-x:auto;'}, id=my_name)
 
     return my_body
@@ -505,6 +508,7 @@ def render_routine(subr, module_symmap, referenced_private_syms, ast_dir):
     body_header.addPart('span', content=my_args, attributes={"class":'argname'})
     if(post_attrs):
         body_header.addPart('span', content=post_attrs, attributes={"class":'argname'})
+    body_header.addPiece(top_link)
 
     body_parts = [Comment(comment), body_header]
 
@@ -713,6 +717,7 @@ def render_type(tp, my_symbols_map, referenced_private_syms):
     title = 'TYPE' + separator
     body_header = newTag('h4', content=title)
     body_header.addPart('span', content=my_name, attributes={"class":"symname"})
+    body_header.addPiece(top_link)
     body_parts = [Comment(comment), body_header, newTag('p', content=my_descr)]
 
     body_parts.append(ruler)

@@ -370,17 +370,15 @@ iframe.wideautoheightbanner {
     position: absolute;
     top: 0px;
     width:  99%;
-    height: 30%; /* the minimum `height' has been doubled to host the quick search box */
+    height: 18%; /* the `height' */
     border: none;
-    z-index: 5;
 }
 iframe.wideautoheight {
     position: absolute;
-    top: 15%; /* 15% is the minimum `height' of the above class necessary to host everithing but the quick search box */
+    top: 18%; /* is the `height' of the above class */
     width:  99%;
-    height: 85%; /* 100% - top */
+    height: 82%; /* 100% - top */
     border: none;
-    z-index: 6;
 }
 
 .clearfix {
@@ -424,11 +422,12 @@ li.dropdown {
 
 .dropdown-content {
     display: none;
+    top: 1%;
     position: absolute;
     z-index: 10;
     background-color: #f9f9f9;
     min-width: 100px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.2);
 }
 
 .dropdown-content a {
@@ -445,8 +444,18 @@ a.external_href[href^="https://"]:after{
     " (" attr(href) url(http://upload.wikimedia.org/wikipedia/commons/6/64/Icon_External_Link.png) ")";
 }
 
-a.my_tools{ font-family: monospace; }
+a.my_tools{
+    font-family: monospace;
+}
 a.my_tools:after{
     font-size:0.9em;
     font-weight:normal;
 }
+
+b.back_to_top{
+    font-family: monospace;
+}
+
+div.toplink{ float: right; }
+
+input.qsearch_text{ width:150px; }

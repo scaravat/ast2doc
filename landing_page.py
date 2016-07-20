@@ -3,7 +3,7 @@
 
 from os import path
 from makeHTML import newTag
-from render import filename, printout, separator
+from render import filename, printout, separator, back_to_top_char
 
 #=============================================================================
 def print_allModules(prefix, modules_list, modules_description, pkgname=None):
@@ -103,7 +103,7 @@ def get_banner(indices, prefix):
     #  .. quick search
     link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
     form_items = [
-        newTag('input', attributes={"type":"text", "name":"whois", "placeholder":"e.g.: dbcsr_frobenius_norm"}), newTag('br'),
+        newTag('input', attributes={"type":"text", "name":"whois", "placeholder":"e.g.: dbcsr_filter", "class":"qsearch_text"}), newTag('br'),
         newTag('input', attributes={"type":"radio", "name":"whatis", "value":"symbol", "checked":None}), "symbol", newTag('br'),
         newTag('input', attributes={"type":"radio", "name":"whatis", "value":"module"}), "module", #newTag('br'),
         newTag('input', attributes={"type":"submit", "value":"GO!", "style":"float: right;"})
@@ -404,8 +404,8 @@ def print_alphabetic(mod_list, modules_description, prefix, descr, fmt='html'):
 
             inner_list = newTag('ul', content=inner_items)
             columns = newTag('div', content=inner_list, attributes={"class":'columns'})
-            back_link = newTag('a', content=ini.upper(), attributes={"href":'#initials', "title":'[back to top]'})
-            head = newTag('h4', content=back_link, id=ini.upper())
+            back_link = newTag('a', content=back_to_top_char, attributes={"href":'#initials', "title":'[back to top]'})
+            head = newTag('h4', content=[back_link, ini.upper()], id=ini.upper(), newlines=False)
             item = newTag('li', content=[head, columns])
             items.append(item)
         outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
