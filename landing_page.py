@@ -175,13 +175,29 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
 #=============================================================================
 import time
 def print_about_page(prefix):
+
     title = 'About CP2K API documentation'
-    heading = newTag('h3', content=title)
+    body_parts = [newTag('h3', content=title)]
+
+    p = newTag('p', content="Documentation automatically generated via:")
+    # fparse
+    href = "https://github.com/oschuett/fparse"
+    link = newTag('a', content="", attributes={"class":"external_href my_tools", "href":href, "target":'_blank', "rel":'nofollow'})
+    fparse = newTag('li', content=["fparse", link])
+    # ast2doc
+    href = "https://github.com/scaravat/ast2doc"
+    link = newTag('a', content="", attributes={"class":"external_href my_tools", "href":href, "target":'_blank', "rel":'nofollow'})
+    ast2doc = newTag('li', content=["ast2doc", link])
+    l = newTag('ul', content=[fparse, ast2doc])
+    body_parts.extend([p, l])
+
     time_now  = time.strftime("%c")
     time_zone = time.tzname[time.daylight]
     time_info = " ".join(["Last update:", time_now, time_zone]) #Last modified: 2016/04/08 12:11
+    body_parts.append(time_info)
+
     fileBaseName = 'about'
-    body = newTag('body', content=[heading, time_info], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
     printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html', title
 

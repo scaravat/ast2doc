@@ -380,7 +380,7 @@ iframe.wideautoheight {
     width:  99%;
     height: 85%; /* 100% - top */
     border: none;
-    z-index: 0;
+    z-index: 6;
 }
 
 .clearfix {
@@ -437,4 +437,16 @@ li.dropdown {
     text-decoration: none;
     display: block;
     text-align: left;
+}
+
+a.external_href[href^="http://"]:after, 
+a.external_href[href^="https://"]:after{
+  content:
+    " (" attr(href) url(http://upload.wikimedia.org/wikipedia/commons/6/64/Icon_External_Link.png) ")";
+}
+
+a.my_tools{ font-family: monospace; }
+a.my_tools:after{
+    font-size:0.9em;
+    font-weight:normal;
 }
