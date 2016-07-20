@@ -366,18 +366,17 @@ img.logo {
     border:0;
 }
 
-iframe.wideautoheightbanner {
+div.wideautoheightbanner {
     position: absolute;
-    top: 0px;
+    top:    0px;
     width:  99%;
-    height: 18%; /* the `height' */
-    border: none;
+    height: 16%; /* the `height' */
 }
 iframe.wideautoheight {
     position: absolute;
-    top: 18%; /* is the `height' of the above class */
+    top:    16%; /* is the `height' of the above class */
     width:  99%;
-    height: 82%; /* 100% - top */
+    height: 84%; /* 100% - top */
     border: none;
 }
 
@@ -412,8 +411,6 @@ table.mostly_used_table tr.mostly_used_table_row > td { padding-left: 20px; vert
 a.dropbtn {
     display: inline-block;
     text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
 }
 
 li.dropdown {
@@ -422,12 +419,11 @@ li.dropdown {
 
 .dropdown-content {
     display: none;
-    top: 1%;
     position: absolute;
     z-index: 10;
     background-color: #f9f9f9;
     min-width: 100px;
-    box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.2);
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
 }
 
 .dropdown-content a {

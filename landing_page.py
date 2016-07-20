@@ -116,10 +116,8 @@ def get_banner(indices, prefix):
 
     CP2kAPIlogo = newTag('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo'})
     header = newTag('h1', content=["CP2K API-Documentation", CP2kAPIlogo], newlines=False)
-    body = newTag('body', content=[header, buttons_list])
-    fileBaseName = "overview-banner"
-    printout(body, prefix, title="Banner", output_file=fileBaseName, jscript="js/showhide.js")
-    return fileBaseName+'.html'
+    banner = newTag('div', content=[header, buttons_list], attributes={"class":'wideautoheightbanner'})
+    return banner
 
 #=============================================================================
 def print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
@@ -132,18 +130,15 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
     initial_index_index = 0
 
-    bannerFileName = get_banner(my_indices, prefix)
+    banner = get_banner(my_indices, prefix)
     noframe = newTag('p', content="Your browser does not support iframes.")
-    banner_iframe = newTag('iframe', content=noframe, id="BannerFrame",
-        attributes={"src":bannerFileName, "name":"BannerFrame", "class":'wideautoheightbanner'}
-    )
     index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
         attributes={"src":my_indices.l2sort[initial_index_index]+".html", "name":"OverviewFrame", "class":'wideautoheight'}
     )
-    body = newTag('body', content=[banner_iframe, index_iframe])
+    body = newTag('body', content=[banner, index_iframe])
 
     fileBaseName = "overview-summary"
-    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript="js/active.js")
+    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
     return fileBaseName+'.html'
 
 #=============================================================================
