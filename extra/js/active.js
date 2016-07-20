@@ -1,9 +1,11 @@
 
 function setActive(baseName) {
     var id = 'button_' + baseName;
-    var myIframe = window.frameElement;          if (myIframe === null) alert("I should be embedded in an iframe");
-    var parentDocument = myIframe.ownerDocument;
-    var lnk = parentDocument.getElementById(id); if (lnk === null || checkElement(lnk, 'A') !== 0) alert("Error 1");
+    var myIframe = window.frameElement; if (myIframe === null) alert("I should be embedded in an iframe");
+    var bannerIframe = myIframe.previousElementSibling; if (myIframe === null) alert("no banner iframe??");
+    var bannerDocument = bannerIframe.contentDocument;
+    var lnk = bannerDocument.getElementById(id);
+    if (lnk === null || checkElement(lnk, 'A') !== 0) alert("Error 1");
 
     if (lnk.hasAttribute("class")) {
         if (lnk.getAttribute("class") !== "active") alert("Error 2");

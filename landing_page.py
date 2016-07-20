@@ -61,7 +61,7 @@ def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
 
     body = newTag('body', content=[heading, allModLink_div, listContainer_div])
 
-    fileBaseName = "overview-frame"
+    fileBaseName = "packages-frame"
     printout(body, prefix, title=title, output_file=fileBaseName)
     return fileBaseName+'.html'
 
@@ -116,9 +116,10 @@ def get_banner(indices, prefix):
 
     CP2kAPIlogo = newTag('img', attributes={"src":'cp2k_apidoc_logo.svg', "alt":'Logo', "class":'logo'})
     header = newTag('h1', content=["CP2K API-Documentation", CP2kAPIlogo], newlines=False)
-    spacer = newTag('div', content='&nbsp;', attributes={"class":'clearfix'}, newlines=False)
-    banner = newTag('div', content=[header, buttons_list, spacer])
-    return banner
+    body = newTag('body', content=[header, buttons_list])
+    fileBaseName = "overview-banner"
+    printout(body, prefix, title="Banner", output_file=fileBaseName, jscript="js/showhide.js")
+    return fileBaseName+'.html'
 
 #=============================================================================
 def print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
@@ -129,16 +130,20 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     my_indices.Append( 'Mostly used', *print_mostly_used(statistics, modules_description, prefix) )
    #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
     my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
+    initial_index_index = 0
 
-    banner = get_banner(my_indices, prefix)
+    bannerFileName = get_banner(my_indices, prefix)
     noframe = newTag('p', content="Your browser does not support iframes.")
-    index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
-        attributes={"src":my_indices.l2sort[0]+".html", "name":"OverviewFrame", "class":'wideautoheight'}
+    banner_iframe = newTag('iframe', content=noframe, id="BannerFrame",
+        attributes={"src":bannerFileName, "name":"BannerFrame", "class":'wideautoheightbanner'}
     )
-    body = newTag('body', content=[banner, index_iframe])
+    index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
+        attributes={"src":my_indices.l2sort[initial_index_index]+".html", "name":"OverviewFrame", "class":'wideautoheight'}
+    )
+    body = newTag('body', content=[banner_iframe, index_iframe])
 
     fileBaseName = "overview-summary"
-    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
+    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript="js/active.js")
     return fileBaseName+'.html'
 
 #=============================================================================
@@ -153,7 +158,7 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
 
     packageListFrame = newTag('frame', attributes={"src":packageListFile, "name":"packageListFrame", "title":"All Packages"})
     packageFrame     = newTag('frame', attributes={"src":allModulesFile, "name":"packageFrame", "title":"All Modules"})
-    moduleFrame      = newTag('frame', attributes={"src":overviewFile, "name":"moduleFrame", "title":"Module descriptions", "scrolling":"yes"})
+    moduleFrame      = newTag('frame', attributes={"src":overviewFile, "name":"moduleFrame", "title":"Module descriptions"})
 
     noscript = newTag('noscript', content=newTag('div', content="JavaScript is disabled on your browser."))
     heading  = newTag('h2', content="Frame Alert")

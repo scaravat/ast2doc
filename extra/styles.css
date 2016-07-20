@@ -164,11 +164,11 @@ td.sign_prefix {
 
 a.api_symbol {
 /*  font-size: 100%; */
-    font-family: courier
+    font-family: courier;
 }
 a.other_symbol {
 /*  font-size: 80%;*/
-    font-family: monospace
+    font-family: monospace;
 }
 
 ul.nobullet {
@@ -354,7 +354,7 @@ ol.autonumb > li {
 
 ol.autonumb > li:before {
   content: counters(item, ".") ". ";
-  padding-right: 0.6em;    
+  padding-right: 0.6em;
 /*display: table-cell;*/
 }
 
@@ -366,11 +366,21 @@ img.logo {
     border:0;
 }
 
+iframe.wideautoheightbanner {
+    position: absolute;
+    top: 0px;
+    width:  99%;
+    height: 30%; /* the minimum `height' has been doubled to host the quick search box */
+    border: none;
+    z-index: 5;
+}
 iframe.wideautoheight {
     position: absolute;
-    width:   99%;
-    height:  99%;
-    border: none
+    top: 15%; /* 15% is the minimum `height' of the above class necessary to host everithing but the quick search box */
+    width:  99%;
+    height: 85%; /* 100% - top */
+    border: none;
+    z-index: 0;
 }
 
 .clearfix {
@@ -399,7 +409,7 @@ table.ranking { padding-bottom: 20px; }
 
 table.mostly_used_table { border-collapse: collapse; }
 table.mostly_used_table tr.mostly_used_table_row { border-bottom: 2px solid gray; }
-table.mostly_used_table tr.mostly_used_table_row > td { padding-left: 20px; vertical-align: top}
+table.mostly_used_table tr.mostly_used_table_row > td { padding-left: 20px; vertical-align: top;}
 
 a.dropbtn {
     display: inline-block;
