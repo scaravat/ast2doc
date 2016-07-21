@@ -56,7 +56,7 @@ def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
     pkglist = getTree(src_tree, packages)
     rootnode = newTag('a', content="[root]", attributes={"href":"ROOT-frame.html", "target":"packageFrame", "title":packages["."]['description'], "style":'font-style:oblique;'})
     fakelist = newTag('ul', content=newTag('li', content=[rootnode, pkglist]), attributes={"class":"nobullet"})
-    list_heading = newTag('h4', content="Packages tree:", attributes={"title":"Packages"})
+    list_heading = newTag('h4', content="Packages:", attributes={"title":"Packages"})
     listContainer_div = newTag('div', content=[list_heading, fakelist])
 
     body = newTag('body', content=[heading, allModLink_div, listContainer_div])
@@ -78,7 +78,7 @@ def getTree(tree, packages, rootnode=None):
         branches.append(list_item)
 
     if branches:
-        pkglist = newTag('ul', content=branches, attributes={"class":"nobullet"})
+        pkglist = newTag('ul', content=branches, attributes={"class":"nobullet_noindent"})
         return pkglist
 
 #=============================================================================
@@ -172,7 +172,7 @@ import time
 def print_about_page(prefix):
 
     title = 'About CP2K API documentation'
-    body_parts = [newTag('h3', content=title)]
+    body_parts = [newTag('h3', content=title, attributes={"class":'index_title'})]
 
     p = newTag('p', content="Documentation automatically generated via:")
     # fparse
