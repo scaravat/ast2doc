@@ -332,7 +332,8 @@ def tweak_attrs_inplace(args_list):
             assert(not 'intent' in arg)
             arg['intent'] = intent
         else:
-            arg['intent'] = ""
+            if not 'intent' in arg:
+                arg['intent'] = ""
         dim = next((a for a in attrs if a.startswith("DIMENSION(")), "")
         if(dim):
             attrs.remove(dim)
