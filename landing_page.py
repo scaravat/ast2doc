@@ -5,6 +5,13 @@ from os import path
 from makeHTML import newTag
 from render import filename, printout, separator, back_to_top_char
 
+slash_replacement = '__'
+
+#=============================================================================
+def encode_package_name(pkgname):
+    pkg = "ROOT" if pkgname=='.' else pkgname.replace('/',slash_replacement).upper()
+    return "pkg__" + pkg
+
 #=============================================================================
 def print_allModules(prefix, modules_list, modules_description, pkgname=None):
 
@@ -14,20 +21,22 @@ def print_allModules(prefix, modules_list, modules_description, pkgname=None):
         pkg = newTag('span', content=pkgname, attributes={"class":'pkgname'})
         post = " modules:"
         heading_content = [pre, pkg, post]
+        encoded_pkgname = encode_package_name(pkgname)
     else:
         title = "All Modules:"
         heading_content = title
+        encoded_pkgname = "pkg__allmodules"
 
     heading = newTag('h2', content=heading_content, newlines=False)
 
     mod_items = []
     for module in sorted(modules_list):
-        link = newTag('a', content=module, attributes={"href":module+".html", "target":'moduleFrame', "title":modules_description[module]})
+        link = newTag('a', content=module, id=module+"__inPackageFrame__"+encoded_pkgname, attributes={"href":module+".html", "target":'moduleFrame', "title":modules_description[module]})
         mod_items.append(newTag('li', content=link))
-    mod_list = newTag('ul', content=mod_items, attributes={"class":'nobullet'})
+    mod_list = newTag('ul', content=mod_items, attributes={"class":'modules_in_package'})
     body = newTag('body', content=[heading, mod_list])
 
-    fileBaseName = pkgname.replace('/','__').upper()+"-frame" if pkgname else "allmodules-frame"
+    fileBaseName = encoded_pkgname+"-frame"
     printout(body, prefix, title=title, output_file=fileBaseName)
     return fileBaseName+'.html'
 
@@ -54,7 +63,7 @@ def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
     allModLink_div = newTag('div', content=link)
 
     pkglist = getTree(src_tree, packages)
-    rootnode = newTag('a', content="[root]", attributes={"href":"ROOT-frame.html", "target":"packageFrame", "title":packages["."]['description'], "style":'font-style:oblique;'})
+    rootnode = newTag('a', content="[root]", attributes={"href":encode_package_name(".")+"-frame.html", "target":"packageFrame", "title":packages["."]['description'], "style":'font-style:oblique;'})
     fakelist = newTag('ul', content=newTag('li', content=[rootnode, pkglist]), attributes={"class":"nobullet"})
     list_heading = newTag('h4', content="Packages:", attributes={"title":"Packages"})
     listContainer_div = newTag('div', content=[list_heading, fakelist])
@@ -70,7 +79,7 @@ def getTree(tree, packages, rootnode=None):
     branches = []
     for child in sorted(tree.GetChildren(rootnode)):
         pkgname = child
-        link = newTag('a', content=pkgname, attributes={"href":pkgname.replace('/','__').upper()+"-frame.html", "target":"packageFrame", "title":packages[child]['description']})
+        link = newTag('a', content=pkgname, attributes={"href":encode_package_name(pkgname)+"-frame.html", "target":"packageFrame", "title":packages[child]['description']})
         list_item = newTag('li', content=link)
         childpkglist = getTree(tree, packages, rootnode=child)
         if childpkglist:
@@ -151,9 +160,9 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
 
     title = 'CP2K API Documentation'
 
-    packageListFrame = newTag('frame', attributes={"src":packageListFile, "name":"packageListFrame", "title":"All Packages"})
-    packageFrame     = newTag('frame', attributes={"src":allModulesFile, "name":"packageFrame", "title":"All Modules"})
-    moduleFrame      = newTag('frame', attributes={"src":overviewFile, "name":"moduleFrame", "title":"Module descriptions"})
+    packageListFrame = newTag('frame', id="packageListFrame", attributes={"src":packageListFile, "name":"packageListFrame", "title":"All Packages"})
+    packageFrame     = newTag('frame', id="packageFrame",     attributes={"src":allModulesFile,  "name":"packageFrame",     "title":"All Modules"})
+    moduleFrame      = newTag('frame', id="moduleFrame",      attributes={"src":overviewFile,    "name":"moduleFrame",      "title":"Module descriptions"})
 
     noscript = newTag('noscript', content=newTag('div', content="JavaScript is disabled on your browser."))
     heading  = newTag('h2', content="Frame Alert")
@@ -165,7 +174,7 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
     outer_frameset = newTag('frameset', content=[inner_frameset, moduleFrame, noframes], attributes={
         "cols":"20%,80%", "title":"Documentation frame", "onload":"top.loadFrames()"})
 
-    printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "js/searchURL.js"])
+    printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "privates_referenced.json", "js/searchURL.js"])
 
 #=============================================================================
 import time
