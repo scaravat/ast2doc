@@ -179,6 +179,10 @@ ul.nobullet_noindent {
     padding: 0;
     margin: 0;
 }
+ul.modules_in_package { list-style-type: none; }
+ul.modules_in_package li a.active {
+    font-weight: bold;
+}
 
 .index_title {
     color:purple;
@@ -240,7 +244,6 @@ ul.navlist li a:hover:not(.active) {
     color: white;
     background-color: #111;
 }
-
 
 .ellipsed {
     white-space: nowrap;
