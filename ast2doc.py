@@ -3,7 +3,7 @@
 
 import sys, os, json
 import utils
-from landing_page import print_landingPage, print_disambiguationPage
+from landing_page import print_landingPage, print_disambiguationPage, encode_package_name
 from render import printout, render_module, render_external, missing_description
 
 #=============================================================================
@@ -37,13 +37,17 @@ def main():
 
     # build a packages tree
     packages = scan_packages(src_dir)
+    dump_packages_json(packages, out_dir)
     src_tree = build_tree(packages)
 
     # module/symbol usage statistics
     statistics = usage_statistics(sym_lookup_table, packages)
 
     # document all modules public symbols
-    modules_lists, modules_description = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
+    modules_lists, modules_description, privates_referenced = document_all_modules(packages, ast_dir, out_dir, api, wanted_module, sym_lookup_table)
+
+    # dump private referenced symbols in JSON
+    dump_privates_referenced(privates_referenced, out_dir)
 
     # mention external/intrinsic modules
     render_external(out_dir)
@@ -142,6 +146,7 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
 
     modules_lists = {'__ALL__':[], '__API__':[]}
     modules_description = {}
+    privates_referenced = {}
     for d, p in packages.iteritems():
         rel_path = os.path.relpath(d, src_root)
         modules_lists[rel_path] = []
@@ -157,9 +162,11 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     modules_description[mod_name] = ast['descr'][0] if ast['descr'] else missing_description # Only 1st \brief is retained here
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
-                    body = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
-                    printout(body, output_dir, mod_name=mod_name)
-    return modules_lists, modules_description
+                    body, my_privates_referenced = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
+                    printout(body, output_dir, mod_name=mod_name, jscript=['packages_modules.json', 'js/updateURL.js'])
+                    if my_privates_referenced:
+                        privates_referenced[mod_name.upper()] = my_privates_referenced
+    return modules_lists, modules_description, privates_referenced
 
 #=============================================================================
 def dump_modules_publics(sym_lookup_table, out_dir):
@@ -180,6 +187,16 @@ def dump_modules_publics(sym_lookup_table, out_dir):
     return syms
 
 #=============================================================================
+def dump_privates_referenced(privates_referenced, out_dir):
+    syms = {}
+    dummy = [syms.setdefault(s, []).append(m) for m in privates_referenced for s in privates_referenced[m]]
+    sdump = json.dumps(privates_referenced).lower()
+    f = open(os.path.join(out_dir, 'privates_referenced.json'), 'w')
+    f.write("modules_priv_symbols = '" + sdump + "'\n")
+    f.write("priv_symbols = '" + json.dumps(syms).lower() + "'\n")
+    f.close()
+
+#=============================================================================
 def scan_packages(src_dir):
     packages = {}
     for root, dirs, files in os.walk(src_dir):
@@ -190,6 +207,20 @@ def scan_packages(src_dir):
             rel_path = os.path.relpath(root, src_dir)
             packages[rel_path] = package
     return(packages)
+
+#=============================================================================
+def dump_packages_json(packages, out_dir):
+
+    # packages DB
+    pdump = json.dumps([encode_package_name(p) for p in packages], sort_keys=True)
+
+    # modules DB
+    mdump = json.dumps(dict( (f[:-2], encode_package_name(p)) for p in packages for f in packages[p]['files'] ))
+
+    f = open(os.path.join(out_dir, 'packages_modules.json'), 'w')
+    f.write("packages = '" + pdump + "'\n")
+    f.write("modules = '" + mdump + "'\n")
+    f.close()
 
 #=============================================================================
 def build_tree(packages):
