@@ -1,6 +1,7 @@
-    var myModules = JSON.parse(modules);
-    var mySymbolsMod = JSON.parse(symbols);
-    var mySymbols = Object.keys(mySymbolsMod);
+    var myModules = JSON.parse(modules),
+        mySymbolsMod = JSON.parse(symbols),
+        mySymbols = Object.keys(mySymbolsMod),
+        myModPrivs = JSON.parse(modules_priv_symbols);
 
     targetPage = "" + window.location.search;
 
@@ -26,6 +27,7 @@
             return false;
         }
 
+        var moduleName;
         var pos = url.indexOf(".html");
         if (pos != -1 && pos == url.length - 5) {
             var allowNumber = false;
@@ -57,8 +59,35 @@
                     return false;
                 }
             }
+            moduleName = url.slice(0, -5);
+            if (myModules.indexOf(moduleName) === -1)
+                return false;
+        } else if (pos != -1) {
+            var searchObj = searchUrlToObj(url);
+            var keyWords = searchObj.keyWords;
+            var keysCheck = ["mod", "sym"];
+            var is_ok = (keyWords.length == keysCheck.length) && keyWords.every(function(element, index) {
+                return element === keysCheck[index];
+            });
+            if (!is_ok || searchObj.mod.indexOf(".html")==-1) return false;
+
+            var found = false;
+            moduleName = searchObj.mod.slice(0, -5);
+            // the module must be in the DB
+            if (myModules.indexOf(moduleName) !== -1) {
+
+                var symbolName = searchObj.sym;
+                if (
+                    // the symbol must be either in the publics of the module...
+                    (mySymbols.indexOf(symbolName) !== -1 && mySymbolsMod[symbolName].indexOf(moduleName) !== -1) ||
+                    // ...or in the referenced private symbols DB
+                    (myModPrivs[moduleName].indexOf(symbolName) !== -1)
+                   )
+                    found = moduleName + ".html" + "#" + symbolName;
+
+            }
+            return found;
         } else {
-            var moduleName, symbolName;
             var searchObj = searchUrlToObj(url);
             var keyWords = searchObj.keyWords;
             var keysCheck = ["whatis", "whois"];
@@ -68,11 +97,10 @@
             if (!is_ok) return false;
             if (searchObj.whatis === "module") {
                 moduleName = searchObj.whois;
-                if (myModules.indexOf(moduleName) !== -1) {
+                if (myModules.indexOf(moduleName) !== -1)
                     return moduleName + ".html";
-                }
             } else if (searchObj.whatis === "symbol") {
-                symbolName = searchObj.whois;
+                var symbolName = searchObj.whois;
                 if (mySymbols.indexOf(symbolName) !== -1) {
                     var moduleList = mySymbolsMod[symbolName];
                     if (moduleList.length === 1) {
@@ -94,7 +122,11 @@
         var i, item, key, val;
         for (i in searchItems) {
             item = searchItems[i].split("=");
-            key = item[0]; val = item[1];
+            if (item == searchItems[i]) {
+                key = "mod"; val = item[0];
+            } else {
+                key = item[0]; val = item[1];
+            }
             n = searchObj.keyWords.push(key);
             searchObj[key] = val;
         }
@@ -103,6 +135,13 @@
     }
 
     function loadFrames() {
-        if (targetPage != "" && targetPage != "undefined")
-             top.moduleFrame.location = top.targetPage;
+        if (targetPage == "") {
+            // do nothing, stay on the landing page
+        } else if (targetPage == "undefined") {
+            // state that the target page hasn't been found
+            top.moduleFrame.document.body.innerHTML = "Not found!";
+        } else {
+            // load the target page in the proper frame
+            top.moduleFrame.location = top.targetPage;
+        }
     }
