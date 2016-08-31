@@ -10,7 +10,7 @@ missing_description = '...'
 separator = ' :: '
 ruler = newTag('hr')
 back_to_top_char = newTag('b', content="^", attributes={"class":'back_to_top'})
-top_link = newTag('div', content=newTag('a', content=back_to_top_char, attributes={"href":"#"}), attributes={"class":"toplink"})
+top_link = newTag('div', content=newTag('a', content=back_to_top_char, attributes={"href":"#", "title":"[back to top]"}), attributes={"class":"toplink"})
 
 #=============================================================================
 #   M O D U L E   (main rendering function)
@@ -125,15 +125,19 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
         body_parts.extend(ifaces)
 
     # ...specific functions details
+    sp_names = []
     if intfs:
         spcf = []
         for sym in sorted(intfs):
             if(sym in specifics): # this is due to explicit interfaces
-                spcf.extend(render_specifics(sym, specifics[sym], my_symbols_map, referenced_private_syms, all_subs_funs, ast_dir))
+                my_spcf, my_spnames = render_specifics(sym, specifics[sym], my_symbols_map, referenced_private_syms, all_subs_funs, ast_dir)
+                spcf.extend(my_spcf)
+                sp_names.extend(my_spnames)
         body_parts.extend(spcf)
 
     # ...private but referenced stuff
     todolists = get_referenced_privates(referenced_private_syms, my_symbols_map, ast)
+    privates_referenced = sp_names + todolists['PARAMS'] + todolists['TYPES']
 
     # ...private parameters
     priv_pars = todolists["PARAMS"]
@@ -154,15 +158,18 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # categories end
     body_parts.append(ruler)
 
-    body = newTag('body', content=body_parts)
-    return body
+    body = newTag('body', content=body_parts, attributes={
+        "onload":"javascript:updateURL('"+my_name+"')",
+        "onhashchange":"javascript:updateURLhash('"+my_name+"')",
+    })
+    return body, privates_referenced
 
 #===============================================================================
 #   I N T E R F A C E S   (generic procedures)
 #===============================================================================
 def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, fun_asts, ast_dir):
     fnames = [f['name'] for f in fun_asts]
-    sp_out = []
+    sp_out, sp_names = [], []
     l2sort = my_specifics.pop('l2sort')
     for spname in l2sort:
         owner_mod, ext_name = my_specifics[spname].split(':')
@@ -171,13 +178,14 @@ def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, f
             my_ast = fun_asts[fnames.index(spname)]
             fpriv = render_routine(my_ast, my_symmap, referenced_private_syms, ast_dir)
             sp_out.append(fpriv)
+            sp_names.append(spname)
         elif(owner_mod == '__HERE__'):
             pass # both the details and the link are already there!
         elif(spname in my_symmap):
             pass # both the details and the link can be found in another html file
         else:
             raise Exception('IFNAME: "%s", SPNAME: "%s", _%r_'%(ifname, spname, my_specifics[spname]))
-    return sp_out
+    return sp_out, sp_names
 
 #===============================================================================
 def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table, referenced_private_syms):
