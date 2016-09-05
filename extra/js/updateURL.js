@@ -35,13 +35,20 @@ function updateURL(moduleName) {
     }
 
     var urlReplacement = mainWindow.prefix.concat(moduleName, ".html");
-    var myHash = window.location.hash;
-    if (myHash)
-        urlReplacement = urlReplacement.concat("&sym=", myHash.slice(1));
+    var myHash = window.location.hash, symName,
+        docTitle = window.document.title;
+    if (myHash) {
+        symName = myHash.slice(1);
+        urlReplacement = urlReplacement.concat("&sym=", symName);
+        docTitle = window.document.title.concat(" (symbol: ", symName, ")");
+    }
 
     // update the URL
     var stateObj = {myLoc:moduleName};
     mainWindow.root.history.replaceState(stateObj, "", urlReplacement);
+
+    // update the main window title with that of the inner document
+    mainWindow.root.document.title = docTitle;
 
 }
 
@@ -66,9 +73,14 @@ function updateURLhash(moduleName) {
         }
         alert("Error: window.location=`"+window.location+"'");
     }
-    var urlReplacement = mainWindow.prefix.concat(moduleName, ".html", "&sym=", myHash.slice(1));
+    var symName = myHash.slice(1);
+    var urlReplacement = mainWindow.prefix.concat(moduleName, ".html", "&sym=", symName);
 
+    // update the URL
     var stateObj = {myLoc:moduleName};
     mainWindow.root.history.replaceState(stateObj, "", urlReplacement);
+
+    // update the main window title
+    mainWindow.root.document.title = window.document.title.concat(" (symbol: ", symName, ")");
 
 }
