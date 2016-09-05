@@ -938,8 +938,9 @@ def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=
     # HTML heading
     head = newTag('head')
     head.addPart('link', attributes={"rel":"stylesheet", "href":"styles.css"})
+    head.addPart('link', attributes={"rel":"shortcut icon", "type":"image/png", "href":"favicon.png"})
     if mod_name:
-        title = 'Documentation for '+mod_name
+        title = 'Documentation for module '+mod_name
         output_file = mod_name
     else:
         assert(title and output_file)
