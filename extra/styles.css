@@ -70,7 +70,7 @@ th.rotate > div > span {
 .symname {
     font-family: courier;
     font-size: 105%;
-    padding: 5px;
+    padding-left: 5px;
 }
 
 .pkgname {
@@ -463,3 +463,9 @@ b.back_to_top{
 div.toplink{ float: right; }
 
 input.qsearch_text{ width:150px; }
+
+div.module_in_fwdsyms {
+    padding-top: 20px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}

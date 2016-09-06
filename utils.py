@@ -65,6 +65,7 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     symbols_forwarded = process_forwarded(my_name, my_pubs, umap, my_sym_map, sym_lookup_table)
 
     sym_lookup_table[my_name] = {
+        'description':ast['descr'],
         'symbols_map':my_sym_map,
         'symbols_cat':my_sym_cat,
         'symbols_descr':my_sym_descr,

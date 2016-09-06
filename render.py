@@ -59,7 +59,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # ...forwarded symbols
     forwarded = my_publics.difference(pars).difference(types).difference(intfs).difference(functs_names)
     if forwarded:
-        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table)
+        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table, ast['uses'])
         body_parts.append(fwded_symbols)
 
     # ...types
@@ -823,13 +823,26 @@ def render_external(prefix):
         printout(body, prefix, title=ext_module, output_file=ext_module)
 
 #===============================================================================
-def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table):
+def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table, uses):
 
-    yes = False
-    sym_divs = []
-    for sym in sorted(forwarded):
-        if not sym in utils.external_symbols:
+    # precalculate the symbols to be printed
+    sym_list = sorted([sym for sym in forwarded if not sym in utils.external_symbols])
 
+    # precalculate external modules involved
+    sym_to_mod = utils.map_symbol_to_module(uses)
+    todolist = {}
+    for sym in sym_list:
+        imported_module, remote_sym = sym_to_mod[sym].split(':')
+        todolist.setdefault(imported_module, []).append(sym)
+    used_modules = [u['from'].lower() for u in uses if 'only' in u and u['from'] in todolist]
+
+    mod_divs = []
+    for imported_module in used_modules:
+        yes = False
+        sym_divs = []
+        for sym in todolist[imported_module.upper()]:
+
+            # my_forwardings is used only when multiple steps are needed to reach the original location of the symbol
             chain = my_forwardings[sym] if sym in my_forwardings else [my_symbols_map[sym]]
             import_steps = []
             for ring in chain:
@@ -844,12 +857,19 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table
             sym_span = newTag('span', content=sym_name, id=sym_name, attributes={"style":'font-weight:bold;'})
             forwarded_sym  = newTag('div', content=[sym_span]+import_steps, newlines=False, attributes={"style":'padding:5px;'})
 
+            # the last ring in chain gives this (owner_module, remote_sym)
             descr = sym_lookup_table[owner_module.upper()]['symbols_descr'][remote_sym.upper()]
             descr_div = newTag('div', content=descr if descr else missing_description, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
 
-            sym_divs.append( newTag('div', content=[forwarded_sym, descr_div], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
+            sym_divs.append( newTag('div', content=[forwarded_sym, descr_div], attributes={"style":'font-family:monospace; padding:1ex; background-color:'+bg_color}) )
 
-    container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
+        mod_briefs = sym_lookup_table[imported_module.upper()]['description']
+        mod_descr = mod_briefs[0] if mod_briefs else missing_description # Only the 1st \brief is retained here
+        mod_header = ["from ", newTag('a', content=imported_module, attributes={"href":filename(imported_module), "title":mod_descr}), ":"]
+        mod_div = newTag('div', content=mod_header, newlines=False, attributes={"class":'module_in_fwdsyms'})
+        mod_divs.append(mod_div); mod_divs.extend(sym_divs)
+
+    container = newTag('div', content=mod_divs, attributes={"class":'box'})
     body_parts = [newTag('h4', content='Forwarded symbols:'), container]
     my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
     return my_body
