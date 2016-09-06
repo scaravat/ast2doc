@@ -59,7 +59,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # ...forwarded symbols
     forwarded = my_publics.difference(pars).difference(types).difference(intfs).difference(functs_names)
     if forwarded:
-        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'])
+        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table)
         body_parts.append(fwded_symbols)
 
     # ...types
@@ -823,11 +823,11 @@ def render_external(prefix):
         printout(body, prefix, title=ext_module, output_file=ext_module)
 
 #===============================================================================
-def render_forwarded(forwarded, my_symbols_map, my_forwardings):
+def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table):
 
     yes = False
     sym_divs = []
-    for sym in forwarded:
+    for sym in sorted(forwarded):
         if not sym in utils.external_symbols:
 
             chain = my_forwardings[sym] if sym in my_forwardings else [my_symbols_map[sym]]
@@ -841,10 +841,13 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings):
             bg_color  = '#f2f2f2' if yes else 'white'
             yes = not yes
             sym_name = sym.lower()
-            sym_span = newTag('span', content=sym_name, id=sym_name, attributes={"style":'font-weight:bold; padding:5px;'})
-            forwarded_sym  = newTag('div', content=sym_span, newlines=False)
-            import_chain   = newTag('div', content=import_steps, attributes={"style":'padding-left:5px;'})
-            sym_divs.append( newTag('div', content=[forwarded_sym, import_chain], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
+            sym_span = newTag('span', content=sym_name, id=sym_name, attributes={"style":'font-weight:bold;'})
+            forwarded_sym  = newTag('div', content=[sym_span]+import_steps, newlines=False, attributes={"style":'padding:5px;'})
+
+            descr = sym_lookup_table[owner_module.upper()]['symbols_descr'][remote_sym.upper()]
+            descr_div = newTag('div', content=descr if descr else missing_description, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
+
+            sym_divs.append( newTag('div', content=[forwarded_sym, descr_div], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
 
     container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
     body_parts = [newTag('h4', content='Forwarded symbols:'), container]

@@ -16,21 +16,25 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     my_own_pubs = []
     my_sym_map = {}
     my_sym_cat = {}
+    my_sym_descr = {}
     if verbose(): print '%sCaching: "%s"' % ('  '*level, my_name)
 
     # consider its own symbols, by category
     if 'publics' in ast:
         my_pubs = [p['name'] for p in ast['publics']]
         for cat in 'functions', 'subroutines', 'interfaces', 'types', 'variables':
-            names = set(f['name'] for f in ast[cat])
+            names_list = [f['name'] for f in ast[cat]]
+            names = set(names_list)
+
+            # publics
             for sym in names.intersection(my_pubs):
                 my_own_pubs.append(sym)
-                my_sym_map[sym] = ':'.join(['__HERE__', sym])
-                my_sym_cat[sym] = cat
+                commit_symbol_inplace(ast[cat][names_list.index(sym)], sym, cat, '__HERE__', my_sym_map, my_sym_cat, my_sym_descr)
+
             # private symbols as well
             for sym in names.difference(my_pubs):
-                my_sym_map[sym] = ':'.join(['__PRIV__', sym])
-                my_sym_cat[sym] = cat
+                commit_symbol_inplace(ast[cat][names_list.index(sym)], sym, cat, '__PRIV__', my_sym_map, my_sym_cat, my_sym_descr)
+
     else:
         my_pubs = []
 
@@ -63,10 +67,21 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     sym_lookup_table[my_name] = {
         'symbols_map':my_sym_map,
         'symbols_cat':my_sym_cat,
+        'symbols_descr':my_sym_descr,
         'umap':umap,
         'symbols_forwarded':symbols_forwarded,
         'my_symbols':sorted(my_own_pubs)
     }
+
+#=============================================================================
+def commit_symbol_inplace(sym_ast, sym, cat, tag, my_sym_map, my_sym_cat, my_sym_descr):
+    my_sym_map[sym] = ':'.join([tag, sym])
+    my_sym_cat[sym] = cat
+    if 'descr' in sym_ast:
+        my_sym_descr[sym] = sym_ast['descr']
+    else:
+        my_sym_descr[sym] = []
+        assert(cat in ('variables', 'interfaces'))
 
 #=============================================================================
 def get_sym_map(mod_name, mod_map, syms):
