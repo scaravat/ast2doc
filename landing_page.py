@@ -134,7 +134,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
     my_indices = IofIndices()
     my_indices.Append( 'Tree', *print_logical_tree_index('__ALL__', prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table) )
     my_indices.Append( 'Index', *print_alphabetic(modules_lists['__ALL__'], modules_description, prefix, 'all') )
-    my_indices.Append( 'Mostly used', *print_mostly_used(statistics, modules_description, prefix) )
+    my_indices.Append( 'Most used', *print_mostly_used(statistics, modules_description, prefix) )
    #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
     my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
     initial_index_index = 0
@@ -280,7 +280,7 @@ def print_mostly_used(statistics, modules_description, prefix):
 
     table = newTag('table', content=rows, attributes={"class":"mostly_used_table"})
 
-    title = "Mostly used modules/symbols statistics"
+    title = "Most used modules/symbols statistics"
     heading = newTag('h2', content=title, attributes={"class":'index_title'})
     fileBaseName = 'mostly_used'
     body = newTag('body', content=[heading, table], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
