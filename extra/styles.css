@@ -445,7 +445,7 @@ li.dropdown {
 a.external_href[href^="http://"]:after, 
 a.external_href[href^="https://"]:after{
   content:
-    " (" attr(href) url(https://upload.wikimedia.org/wikipedia/commons/6/64/Icon_External_Link.png) ")";
+    " (" attr(href) url(Icon_External_Link.png) ")";
 }
 
 a.my_tools{
