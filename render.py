@@ -60,7 +60,8 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     forwarded = my_publics.difference(pars).difference(types).difference(intfs).difference(functs_names)
     if forwarded:
         fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table, ast['uses'])
-        body_parts.append(fwded_symbols)
+        if fwded_symbols:
+            body_parts.append(fwded_symbols)
 
     # ...types
     if types:
@@ -834,6 +835,8 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table
     for sym in sym_list:
         imported_module, remote_sym = sym_to_mod[sym].split(':')
         todolist.setdefault(imported_module, []).append(sym)
+    if not todolist:
+        return
     used_modules = [u['from'].lower() for u in uses if 'only' in u and u['from'] in todolist]
 
     mod_divs = []
