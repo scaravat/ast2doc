@@ -78,18 +78,28 @@ function updateURLhash(moduleName) {
         alert("Error(updateURLhash): mainDocBaseName=`"+mainDocBaseName+"'");
 
     var myHash = window.location.hash;
-    if (!myHash) {
+    if (myHash) {
+
+        var symName = myHash.slice(1);
+        var pos = symName.indexOf(":");
+        if (pos !== -1)
+            // avoid encoding a function argument name
+            symName = symName.slice(0, pos);
+        var urlReplacement = mainWindow.prefix.concat(moduleName, ".html", "&sym=", symName);
+
+    } else {
         if (window.location.href.endsWith('#')) {
             // prevent back-to-top hash from messing up using replaceState
             return;
         }
-        alert("Error: window.location=`"+window.location+"'");
+        if (myHash.length === 0) {
+            // going back in history we could meet a state without hashes...
+            //  ... so: cleanup the "&sym" stuff!
+            var urlReplacement = mainWindow.prefix.concat(moduleName, ".html");
+        } else {
+            alert("Error: window.location=`"+window.location+"'");
+        }
     }
-    var symName = myHash.slice(1);
-    var pos = symName.indexOf(":");
-    if (pos !== -1)
-        symName = symName.slice(0, pos);
-    var urlReplacement = mainWindow.prefix.concat(moduleName, ".html", "&sym=", symName);
 
     // update the URL
     var stateObj = {myLoc:moduleName};
