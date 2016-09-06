@@ -151,7 +151,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 
     # ...private parameters & types
     if prvpars or prvtypes:
-        body_parts.extend([ruler, newTag('h4', content='Private Parameters/Types:')])
+        body_parts.extend([ruler, newTag('h4', content='private Parameters/Types:')])
         if prvpars: body_parts.append(prvpars)
         body_parts.extend(prvtypes)
 
@@ -472,7 +472,7 @@ def routines_summary(names, subs, funs, symmap, referenced_private_syms):
 
     container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
 
-    body_parts = [newTag('h4', content='Subroutines/Functions:'), container]
+    body_parts = [newTag('h4', content='public Subroutines/Functions:'), container]
     my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
     return my_body
 
@@ -658,7 +658,7 @@ def render_parameters(paramts, my_symbols_map, referenced_private_syms, hint='PA
     if rows:
         what = 'Other:'
         if(hint):
-            what = 'Parameters:' if hint=='PARAMETER' else 'Static variables:'
+            what = 'Parameters:' if hint=='PARAMETER' else 'Module variables:'
         heading = newTag('h4', content=what)
         table = newTag('table', content=rows, attributes={"class":"arglist"})
         html = newTag('div', content=[heading, table], attributes={"class":"box", "style":'overflow:auto;'})
@@ -690,7 +690,7 @@ def types_summary(typenames, ast):
         sym_divs.append( newTag('div', content=[type_div, descr_div], attributes={"style":'padding:1ex; background-color:'+bg_color}) )
 
     container = newTag('div', content=sym_divs, attributes={"class":'box', "style":'font-family:monospace;'})
-    body_parts = [newTag('h4', content='Public types:'), container]
+    body_parts = [newTag('h4', content='public Types:'), container]
     my_body = newTag('div', content=body_parts, attributes={"class":'box', "style":'border:none;'})
     return my_body
 
@@ -714,7 +714,7 @@ def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms):
             raise Exception('"%s"'%my_symbols_map[sym])
 
     if t_pieces:
-        t_pieces.insert(0, newTag('h5', content=tag.title()+" types:", id='types_'+tag))
+        t_pieces.insert(0, newTag('h5', content=tag+" Types:", id='types_'+tag))
     return t_pieces
 
 #===============================================================================

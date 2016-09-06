@@ -465,7 +465,7 @@ div.toplink{ float: right; }
 input.qsearch_text{ width:150px; }
 
 div.module_in_fwdsyms {
-    padding-top: 20px;
+    padding-top: 2em;
     padding-bottom: 5px;
     font-weight: bold;
 }
