@@ -86,6 +86,9 @@ function updateURLhash(moduleName) {
         alert("Error: window.location=`"+window.location+"'");
     }
     var symName = myHash.slice(1);
+    var pos = symName.indexOf(":");
+    if (pos !== -1)
+        symName = symName.slice(0, pos);
     var urlReplacement = mainWindow.prefix.concat(moduleName, ".html", "&sym=", symName);
 
     // update the URL
