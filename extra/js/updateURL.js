@@ -17,7 +17,7 @@ function getMainWindow() {
     else if (winDocURLbaseName === "index.html"+winLocSearch)
         prefix = "index.html?";
     else
-        alert("Error(getMainWindow): winDocURLbaseName=`"+winDocURLbaseName+"'");
+        throw "Error(getMainWindow): winDocURLbaseName=`"+winDocURLbaseName+"'";
     mainWindow["prefix"] = prefix;
 
     // frames in the main window
@@ -28,7 +28,13 @@ function getMainWindow() {
 
 function updateURL(moduleName) {
 
-    var mainWindow = getMainWindow();
+    var mainWindow;
+    try {
+        mainWindow = getMainWindow();
+    }
+    catch (error) {
+        return;
+    }
     if (mainWindow === null) {
         alert("Should be in a frame!");
         return;
@@ -54,7 +60,13 @@ function updateURL(moduleName) {
 
 function updateURLhash(moduleName) {
 
-    var mainWindow = getMainWindow();
+    var mainWindow;
+    try {
+        mainWindow = getMainWindow();
+    }
+    catch (error) {
+        return;
+    }
     if (mainWindow === null) {
         alert("Should be in a frame!");
         return;
