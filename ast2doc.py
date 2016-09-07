@@ -163,7 +163,7 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
                     body, my_privates_referenced = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
-                    printout(body, output_dir, mod_name=mod_name, jscript=['packages_modules.json', 'js/updateURL.js'])
+                    printout(body, output_dir, mod_name=mod_name, jscript=['packages_modules.json', 'js/common.js', 'js/updateURL.js'])
                     if my_privates_referenced:
                         privates_referenced[mod_name.upper()] = my_privates_referenced
     return modules_lists, modules_description, privates_referenced
