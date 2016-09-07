@@ -13,15 +13,18 @@ def encode_package_name(pkgname):
     return "pkg__" + pkg
 
 #=============================================================================
-def print_allModules(prefix, modules_list, modules_description, pkgname=None):
+def print_allModules(prefix, modules_list, modules_description, pkgdir=None, packages=None):
 
-    if pkgname:
+    if pkgdir:
+        pkgname = 'ROOT' if pkgdir=='.' else pkgdir
         title = " ".join([pkgname, "package"])
         pre = ""
         pkg = newTag('span', content=pkgname, attributes={"class":'pkgname'})
         post = " modules:"
         heading_content = [pre, pkg, post]
-        encoded_pkgname = encode_package_name(pkgname)
+        encoded_pkgname = encode_package_name(pkgdir)
+        assert(packages)
+        print_packageOverview(prefix, pkgname, encoded_pkgname, packages[pkgdir]['description'], modules_list, modules_description)
     else:
         title = "All Modules:"
         heading_content = title
@@ -41,16 +44,34 @@ def print_allModules(prefix, modules_list, modules_description, pkgname=None):
     return fileBaseName+'.html'
 
 #=============================================================================
-def print_packageFrame(prefix, modules_lists, modules_description):
-    packages = [item for item in modules_lists.keys() if not item in ('__ALL__', '__API__')]
+def print_packageOverview(prefix, pkgname, encoded_pkgname, descr, modules_list, modules_description):
+
+    pkgspan = newTag('span', content=pkgname, attributes={"class":"pkgname"})
+    heading = newTag('h3', content=["Overview of package ", pkgspan], newlines=False)
+    description = newTag('p', content=descr)
+    items = []
+    for module in sorted(modules_list):
+        link = newTag('a', content=module, attributes={"href":module+".html", "target":'moduleFrame'})
+        mod_dt = newTag('dt', content=link, attributes={"style":"padding-top:0.5em;"}, newlines=False)
+        mod_descr = newTag('dd', content=modules_description[module])
+       #items.append(newTag('li', content=[link, ' &#8212; ', mod_descr]))
+        items.extend([mod_dt, mod_descr])
+    modules_dl = newTag('dl', content=items)
+    body = newTag('body', content=[heading, description, modules_dl])
+
+    fileBaseName = encoded_pkgname+"-overview"
+    printout(body, prefix, title="Overview of package "+pkgname, output_file=fileBaseName)
+
+#=============================================================================
+def print_packageFrame(prefix, modules_lists, modules_description, packages):
+    my_packages = [item for item in modules_lists.keys() if not item in ('__ALL__', '__API__')]
 
     files = []
-    for pkg in sorted(packages):
-        pkgname = 'ROOT' if pkg=='.' else pkg
-        title = "Modules for package " + pkgname
+    for pkg in sorted(my_packages):
+        title = "Modules for package " + 'ROOT' if pkg=='.' else pkg
         heading = newTag('h2', content=title)
         my_modules = modules_lists[pkg]
-        my_file = print_allModules(prefix, my_modules, modules_description, pkgname=pkgname)
+        my_file = print_allModules(prefix, my_modules, modules_description, pkg, packages)
         files.append(my_file)
     return files
 
@@ -63,7 +84,16 @@ def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
     allModLink_div = newTag('div', content=link)
 
     pkglist = getTree(src_tree, packages)
-    rootnode = newTag('a', content="[root]", attributes={"href":encode_package_name(".")+"-frame.html", "target":"packageFrame", "title":packages["."]['description'], "style":'font-style:oblique;'})
+    pkgdir = "."
+    pkgname = encode_package_name(pkgdir)
+    pkgdescr = packages[pkgdir]['description']
+    rootnode = newTag('a', content="[root]", attributes={
+        "href":pkgname + "-frame.html",
+        "target":"packageFrame",
+        "title":pkgdescr,
+        "style":'font-style:oblique;',
+        "onclick":"resetModuleFrameWithPkgDescr('root', '"+pkgname+"')"
+    })
     fakelist = newTag('ul', content=newTag('li', content=[rootnode, pkglist]), attributes={"class":"nobullet"})
     list_heading = newTag('h4', content="Packages:", attributes={"title":"Packages"})
     listContainer_div = newTag('div', content=[list_heading, fakelist])
@@ -71,15 +101,21 @@ def print_packageListFrame(prefix, allModulesFile, src_tree, packages):
     body = newTag('body', content=[heading, allModLink_div, listContainer_div])
 
     fileBaseName = "packages-frame"
-    printout(body, prefix, title=title, output_file=fileBaseName)
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript=["js/common.js", "js/resetModuleFrame.js"])
     return fileBaseName+'.html'
 
 #=============================================================================
 def getTree(tree, packages, rootnode=None):
     branches = []
     for child in sorted(tree.GetChildren(rootnode)):
-        pkgname = child
-        link = newTag('a', content=pkgname, attributes={"href":encode_package_name(pkgname)+"-frame.html", "target":"packageFrame", "title":packages[child]['description']})
+        pkgname = encode_package_name(child)
+        pkgdescr = packages[child]['description']
+        link = newTag('a', content=child, attributes={
+            "href":pkgname+"-frame.html",
+            "target":"packageFrame",
+            "title":pkgdescr,
+            "onclick":"resetModuleFrameWithPkgDescr('"+child+"', '"+pkgname+"')"
+        })
         list_item = newTag('li', content=link)
         childpkglist = getTree(tree, packages, rootnode=child)
         if childpkglist:
@@ -154,7 +190,7 @@ def print_overview(prefix, src_tree, packages, modules_lists, modules_descriptio
 def print_landingPage(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
 
     allModulesFile  = print_allModules(prefix, modules_lists['__ALL__'], modules_description)
-    pkgModulesFiles = print_packageFrame(prefix, modules_lists, modules_description)
+    pkgModulesFiles = print_packageFrame(prefix, modules_lists, modules_description, packages)
     packageListFile = print_packageListFrame(prefix, allModulesFile, src_tree, packages)
     overviewFile    = print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table)
 
