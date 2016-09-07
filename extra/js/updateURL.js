@@ -45,6 +45,10 @@ function updateURL(moduleName) {
         docTitle = window.document.title;
     if (myHash) {
         symName = myHash.slice(1);
+        var pos = symName.indexOf(":");
+        if (pos !== -1)
+            // avoid encoding a function argument name
+            symName = symName.slice(0, pos);
         urlReplacement = urlReplacement.concat("&sym=", symName);
         docTitle = window.document.title.concat(" (symbol: ", symName, ")");
     }
