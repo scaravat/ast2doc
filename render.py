@@ -46,9 +46,9 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # ...module description
     body_parts.extend( [newTag('p', content=l) for l in my_descr] )
 
-    # ...link to the source code (@sourceforge)
-    href = path.join( path.join('https://sourceforge.net/p/cp2k/code/HEAD/tree/trunk/cp2k/src', rel_path), my_file )
-    src_link = newTag("a", attributes={"href":href, "target":'_blank'}, content=my_file)
+    # ...link to the source code (@github)
+    href = make_external_url(rel_path, file_name=my_file)
+    src_link = newTag("a", attributes={"href":href, "target":'_blank', "class":"external_href_nourl"}, content=my_file)
     body_parts.extend(['source:', src_link, ruler])
 
     # init the queue of refereced private symbols to be printed
@@ -102,7 +102,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 
     # ...types
     if types:
-        pubtypes = render_types_set('public', types, ast['types'], my_symbols_map, referenced_private_syms)
+        pubtypes = render_types_set('public', types, ast['types'], my_symbols_map, referenced_private_syms, rel_path)
         body_parts.extend([ruler] + pubtypes)
 
     # ...specific functions for interfaces (compact view)
@@ -110,19 +110,19 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
         body_parts.append(ruler)
         for sym in sorted(intfs):
             if(sym in specifics): # this is due to explicit interfaces
-                iface = render_interface(sym, ast, ast_dir, specifics[sym], sym_lookup_table, referenced_private_syms)
+                iface = render_interface(sym, ast, rel_path, ast_dir, specifics[sym], sym_lookup_table, referenced_private_syms)
                 body_parts.append(iface)
 
     # ...subroutines & functions
     if functs_publics:
         for sym in functs_publics:
             # ... function details
-            subr = render_routine(all_subs_funs[functs_names.index(sym)], my_symbols_map, referenced_private_syms, ast_dir)
+            subr = render_routine(all_subs_funs[functs_names.index(sym)], my_symbols_map, referenced_private_syms, rel_path, ast_dir)
             body_parts.append(subr)
 
     # ...abstract & explicit interfaces
     if intfs:
-        ifaces = render_explicit_interfaces(intfs, ast['interfaces'], my_symbols_map, referenced_private_syms, ast_dir)
+        ifaces = render_explicit_interfaces(intfs, ast['interfaces'], my_symbols_map, referenced_private_syms, rel_path, ast_dir)
         body_parts.extend(ifaces)
 
     # ...specific functions details
@@ -131,13 +131,13 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
         spcf = []
         for sym in sorted(intfs):
             if(sym in specifics): # this is due to explicit interfaces
-                my_spcf, my_spnames = render_specifics(sym, specifics[sym], my_symbols_map, referenced_private_syms, all_subs_funs, ast_dir)
+                my_spcf, my_spnames = render_specifics(sym, specifics[sym], my_symbols_map, referenced_private_syms, all_subs_funs, rel_path, ast_dir)
                 spcf.extend(my_spcf)
                 sp_names.extend(my_spnames)
         body_parts.extend(spcf)
 
     # ...private but referenced stuff
-    todolists = get_referenced_privates(referenced_private_syms, my_symbols_map, ast)
+    todolists = get_referenced_privates(referenced_private_syms, my_symbols_map, ast, rel_path)
     privates_referenced = sp_names + todolists['PARAMS'] + todolists['TYPES']
 
     # ...private parameters
@@ -148,7 +148,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 
     # ...private types
     priv_types = todolists["TYPES"]
-    prvtypes = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced_private_syms)
+    prvtypes = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced_private_syms, rel_path)
 
     # ...private parameters & types
     if prvpars or prvtypes:
@@ -168,7 +168,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
 #===============================================================================
 #   I N T E R F A C E S   (generic procedures)
 #===============================================================================
-def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, fun_asts, ast_dir):
+def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, fun_asts, rel_path, ast_dir):
     fnames = [f['name'] for f in fun_asts]
     sp_out, sp_names = [], []
     l2sort = my_specifics.pop('l2sort')
@@ -177,7 +177,7 @@ def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, f
         if(owner_mod == '__PRIV__'):
             assert(ext_name == spname)
             my_ast = fun_asts[fnames.index(spname)]
-            fpriv = render_routine(my_ast, my_symmap, referenced_private_syms, ast_dir)
+            fpriv = render_routine(my_ast, my_symmap, referenced_private_syms, rel_path, ast_dir)
             sp_out.append(fpriv)
             sp_names.append(spname)
         elif(owner_mod == '__HERE__'):
@@ -189,11 +189,12 @@ def render_specifics(ifname, my_specifics, my_symmap, referenced_private_syms, f
     return sp_out, sp_names
 
 #===============================================================================
-def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table, referenced_private_syms):
+def render_interface(iname, ast, rel_path, ast_dir, specifics, sym_lookup_table, referenced_private_syms):
 
     inames  = [s['name'] for s in ast['interfaces']]
     my_ast  = ast['interfaces'][inames.index(iname)]
     mod_name = ast['name']
+    ext_href = make_external_url(rel_path, beg_end_loci=my_ast['beg_end_loci'])
 
     my_name = iname.lower()
     comment = " ".join(['INTERFACE', my_name])
@@ -206,9 +207,9 @@ def render_interface(iname, ast, ast_dir, specifics, sym_lookup_table, reference
 
     specifics = render_specifics_compact(sp, sp_symmap, sym_lookup_table[mod_name]['symbols_map'], referenced_private_syms, my_name, ast_dir)
 
-    header = newTag('h4', content='Generic procedure ')
-    header.addPart('span', content=my_name, attributes={"class":"symname"})
-    header.addPiece(top_link)
+    name_span = newTag('span', content=my_name, attributes={"class":"symname"})
+    src_link = newTag('a', content=name_span, attributes={"href":ext_href, "target":'_blank'})
+    header = newTag('h4', content=['Generic procedure ', src_link, top_link])
     my_body = newTag('div', content=[Comment(comment), header, specifics], attributes={"class":'box', "style":'overflow-x:auto;'}, id=my_name)
 
     return my_body
@@ -395,7 +396,7 @@ def interfaces_summary(names, intfcs, symmap):
 #===============================================================================
 #   I N T E R F A C E S   (abstract & explicit ones)
 #===============================================================================
-def render_explicit_interfaces(names, intfcs, symmap, referenced_private_syms, ast_dir):
+def render_explicit_interfaces(names, intfcs, symmap, referenced_private_syms, rel_path, ast_dir):
     inames = [s['name'] for s in intfcs]
     divs = []
     # abstract ones
@@ -403,7 +404,7 @@ def render_explicit_interfaces(names, intfcs, symmap, referenced_private_syms, a
         iface = intfcs[inames.index(ifname)]
         if(iface['task'] == 'abstract_interface'):
             ast = iface['procedures'][0]
-            divs.append(render_routine(ast, symmap, referenced_private_syms, ast_dir))
+            divs.append(render_routine(ast, symmap, referenced_private_syms, rel_path, ast_dir))
             divs[-1].pieces.insert(0, 'Abstract interface')
     # explicit ones
     for ifname in sorted(names):
@@ -411,7 +412,7 @@ def render_explicit_interfaces(names, intfcs, symmap, referenced_private_syms, a
         if(iface['task'] == 'explicit_interface'):
             assert(len(iface['procedures']))
             ast = iface['procedures'][0]
-            div = render_routine(ast, symmap, referenced_private_syms, ast_dir)
+            div = render_routine(ast, symmap, referenced_private_syms, rel_path, ast_dir)
             target_name = div.popID()
             div.addID(ifname.lower())
             div.pieces.insert(0, 'Explicit interface to '+target_name)
@@ -478,7 +479,7 @@ def routines_summary(names, subs, funs, symmap, referenced_private_syms):
     return my_body
 
 #===============================================================================
-def render_routine(subr, module_symmap, referenced_private_syms, ast_dir):
+def render_routine(subr, module_symmap, referenced_private_syms, rel_path, ast_dir):
 
     # fetch routine's info
     my_name    = subr['name'].lower()
@@ -513,9 +514,12 @@ def render_routine(subr, module_symmap, referenced_private_syms, ast_dir):
    #agroups = group_arguments(subr['args'])
 
     # heading
-    body_header = newTag('h4', content=' '.join([pre_attrs, my_role]))
-    body_header.addPart('span', content=my_name, attributes={"class":"symname"})
-    body_header.addPart('span', content=my_args, attributes={"class":'argname'})
+    head_pfx = ' '.join([pre_attrs, my_role])
+    ext_href = make_external_url(rel_path, beg_end_loci=subr['beg_end_loci'])
+    name_span = newTag('span', content=my_name, attributes={"class":"symname"})
+    src_link = newTag('a', content=name_span, attributes={"href":ext_href, "target":'_blank'})
+    args_span = newTag('span', content=my_args, attributes={"class":'argname'})
+    body_header = newTag('h4', content=[head_pfx, src_link, args_span], newlines=False)
     if(post_attrs):
         body_header.addPart('span', content=post_attrs, attributes={"class":'argname'})
     body_header.addPiece(top_link)
@@ -696,7 +700,7 @@ def types_summary(typenames, ast):
     return my_body
 
 #===============================================================================
-def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms):
+def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms, rel_path):
     type_names = [s['name'] for s in ast]
 
     t_pieces = []
@@ -706,7 +710,7 @@ def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms):
         owner_mod, ext_sym = my_symbols_map[sym].split(':')
         if owner_mod in ('__HERE__', '__REFERENCED_PRIV__'):
             my_ast = ast[type_names.index(sym)]
-            t = render_type(my_ast, my_symbols_map, referenced_private_syms)
+            t = render_type(my_ast, my_symbols_map, referenced_private_syms, rel_path)
             box = newTag('div', content=t, id=sym.lower(), attributes={"class":'box'})
             t_pieces.append( box )
         elif owner_mod == '__PRIV__':
@@ -719,15 +723,16 @@ def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms):
     return t_pieces
 
 #===============================================================================
-def render_type(tp, my_symbols_map, referenced_private_syms):
+def render_type(tp, my_symbols_map, referenced_private_syms, rel_path):
     my_name = tp['name'].lower()
     my_descr = tp['descr'] if tp['descr'] else missing_description
     comment = " ".join([tp['tag'].upper(), my_name])
 
     title = 'TYPE' + separator
-    body_header = newTag('h4', content=title)
-    body_header.addPart('span', content=my_name, attributes={"class":"symname"})
-    body_header.addPiece(top_link)
+    name_span = newTag('span', content=my_name, attributes={"class":"symname"})
+    ext_href = make_external_url(rel_path, beg_end_loci=tp['beg_end_loci'])
+    src_link = newTag('a', content=name_span, attributes={"href":ext_href, "target":'_blank'})
+    body_header = newTag('h4', content=[title, src_link, top_link])
     body_parts = [Comment(comment), body_header, newTag('p', content=my_descr)]
 
     body_parts.append(ruler)
@@ -878,7 +883,7 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table
     return my_body
 
 #===============================================================================
-def get_referenced_privates(referenced_so_far, my_symbols_map, ast):
+def get_referenced_privates(referenced_so_far, my_symbols_map, ast, rel_path):
 
     referenced = referenced_so_far.copy()
     params_todo, types_todo = [], []
@@ -906,7 +911,7 @@ def get_referenced_privates(referenced_so_far, my_symbols_map, ast):
         priv_types = [item for item in referenced["TYPES"] if item not in types_todo]
 
         # dummy call only to accumulate all the referenced private parameters
-        prvt_divs = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced)
+        prvt_divs = render_types_set('private', priv_types, ast['types'], my_symbols_map, referenced, rel_path)
 
         # update lists
         for item in priv_types:
@@ -957,6 +962,34 @@ def group_arguments(args):
         })
 
     return agroups
+
+#===============================================================================
+#prefix_sourceforge = 'https://sourceforge.net/p/cp2k/code/HEAD/tree/trunk/cp2k/src'
+prefix_github = 'https://github.com/cp2k/cp2k/blob/master/cp2k/src'
+n_lines_cutoff = 20
+def make_external_url(rel_path, **kwargs):
+
+    beg_end_loci = kwargs['beg_end_loci'] if 'beg_end_loci' in kwargs else None
+    file_name = kwargs['file_name'] if 'file_name' in kwargs else None
+
+    if beg_end_loci:
+
+        # unpack everything from beg_end_loci when provided
+        (my_file, beg_line), (my_file_, end_line) = [locus.split(':') for locus in beg_end_loci]
+
+        # build URL with beg_line at least
+        url = path.join( path.join(prefix_github, rel_path), my_file )
+        url += "#L" + beg_line
+
+        # when number of lines is small enough: end_line as well!
+        if my_file==my_file_ and int(end_line)-int(beg_line) <= n_lines_cutoff:
+            url += "#L" + end_line
+
+    else:
+        assert(file_name)
+        url = path.join( path.join(prefix_github, rel_path), file_name )
+
+    return url
 
 #===============================================================================
 def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None):
