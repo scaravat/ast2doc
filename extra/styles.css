@@ -448,6 +448,12 @@ a.external_href[href^="https://"]:after{
     " (" attr(href) url(Icon_External_Link.png) ")";
 }
 
+a.external_href_nourl[href^="http://"]:after, 
+a.external_href_nourl[href^="https://"]:after{
+  content:
+    url(Icon_External_Link.png);
+}
+
 a.my_tools{
     font-family: monospace;
 }
