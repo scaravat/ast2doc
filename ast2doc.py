@@ -9,7 +9,7 @@ from render import printout, render_module, render_external, missing_description
 #=============================================================================
 def main():
     if(len(sys.argv) < 4):
-        print("Usage: print_doc.py <src-dir> <ASTs-dir> <HTML-output-dir>")
+        print("Usage: ast2doc.py <src-dir> <ASTs-dir> <HTML-output-dir>")
         sys.exit(1)
 
     src_dir = sys.argv[1]
