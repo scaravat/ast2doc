@@ -726,9 +726,14 @@ def render_types_set(tag, names, ast, my_symbols_map, referenced_private_syms, r
 def render_type(tp, my_symbols_map, referenced_private_syms, rel_path):
     my_name = tp['name'].lower()
     my_descr = tp['descr'] if tp['descr'] else missing_description
+    my_attrs = tp['attrs'] if 'attrs' in tp else ""
     comment = " ".join([tp['tag'].upper(), my_name])
 
-    title = 'TYPE' + separator
+    title = 'TYPE'
+    if my_attrs:
+        assert(my_attrs=="BIND(C)")
+        title += ", " + my_attrs
+    title += separator
     name_span = newTag('span', content=my_name, attributes={"class":"symname"})
     ext_href = make_external_url(rel_path, beg_end_loci=tp['beg_end_loci'])
     src_link = newTag('a', content=name_span, attributes={"href":ext_href, "target":'_blank'})
@@ -982,7 +987,7 @@ def make_external_url(rel_path, **kwargs):
         url += "#L" + beg_line
 
         # when number of lines is small enough: end_line as well!
-        if my_file==my_file_ and int(end_line)-int(beg_line) <= n_lines_cutoff:
+        if my_file==my_file_ and int(end_line)-int(beg_line)+1 <= n_lines_cutoff:
             url += "#L" + end_line
 
     else:
