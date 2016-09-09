@@ -460,11 +460,13 @@ def routines_summary(names, subs, funs, symmap, referenced_private_syms):
 
         if(arglist):
             div_pieces.append('(')
-            for arg in arglist[:-1]:
-                div_pieces.extend( [newTag('a', content=arg, attributes={"href":'#'+':'.join([sym_name, arg])}), ', '] )
-            else:
-                arg = arglist[-1]
-                div_pieces.append( newTag('a', content=arg, attributes={"href":'#'+':'.join([sym_name, arg])}) )
+            for arg in arglist:
+                a_attributes = {"href":'#'+':'.join([sym_name, arg])}
+                arg_attrs = my_ast['args'][arglist.index(arg)]['attrs']
+                if 'OPTIONAL' in arg_attrs:
+                    a_attributes["class"] = 'optional_argument'
+                div_pieces.extend( [newTag('a', content=arg, attributes=a_attributes), ', '] )
+            assert(div_pieces.pop() == ', ')
             div_pieces.append(')')
 
         f_signature = newTag('div', content=div_pieces, attributes={"class":'ellipsed ellipsed_arglist', "style":'font-weight:bold; padding:5px;'}, newlines=False)

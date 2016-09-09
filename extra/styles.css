@@ -170,6 +170,10 @@ a.other_symbol {
 /*  font-size: 80%;*/
     font-family: monospace;
 }
+a.optional_argument {
+    color: #5555FF;
+    font-weight:normal;
+}
 
 ul.nobullet {
     list-style-type: none;
