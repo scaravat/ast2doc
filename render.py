@@ -228,7 +228,8 @@ def render_specifics_compact(sp, sp_symmap, symmap, referenced_private_syms, my_
         for j, a in enumerate(args):     # j runs over arguments (rows)
             aname = a['name']
             a['attrs_str'] = ':'.join(sorted(a['attrs']))
-            signature = ':'.join([a[k] for k in 'type', 'intent', 'attrs_str', 'name' if a[k]])
+            a['name+dim'] = a['name'] + a['dim']
+            signature = ':'.join([a[k] for k in 'type', 'intent', 'attrs_str', 'name+dim' if a[k]])
             if signature in l2sort:
                 data[signature]['routines'].append(names[i])
             else:
@@ -291,7 +292,7 @@ def render_specifics_compact(sp, sp_symmap, symmap, referenced_private_syms, my_
         cols.append( newTag('td', content=content, attributes={"class":'misc_attrs', "style":'text-align:left;'}) )
 
         cols.append( newTag('td', content=separator, attributes={"class":'separee'}) )
-        cols.append( newTag('td', content=a['name'].lower(), attributes={"class":'argname', "style":"text-align:left; padding-left:1ex;"}) )
+        cols.append( newTag('td', content=a['name+dim'].lower(), attributes={"class":'argname', "style":"text-align:left; padding-left:1ex;"}) )
         for name in names:
             content = '&times;' if name in who_has else ''
             cols.append( newTag('td', content=content) )
