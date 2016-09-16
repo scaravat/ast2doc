@@ -57,7 +57,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # SUMMARIES...
 
     # ...forwarded symbols
-    forwarded = my_publics.difference(pars).difference(types).difference(intfs).difference(functs_names)
+    forwarded = my_publics.difference(pars, types, intfs, functs_names)
     if forwarded:
         fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table, ast['uses'])
         if fwded_symbols:
@@ -462,7 +462,7 @@ def routines_summary(names, subs, funs, symmap, referenced_private_syms):
         if(arglist):
             div_pieces.append('(')
             for arg in arglist:
-                a_attributes = {"href":'#'+':'.join([sym_name, arg])}
+                a_attributes = {"href":'#'+sym_name, "onclick":"javascript:highlightArgument('"+':'.join([sym_name, arg])+"')"}
                 arg_attrs = my_ast['args'][arglist.index(arg)]['attrs']
                 if 'OPTIONAL' in arg_attrs:
                     a_attributes["class"] = 'optional_argument'
@@ -586,7 +586,7 @@ def render_routine(subr, module_symmap, referenced_private_syms, rel_path, ast_d
             else:
                 r.addPart('td', content='')
             r.addPart('td', content=separator, attributes={"class":'separee'})
-            r.addPart('td', content=aname+adim, id=':'.join([my_name, aname]))
+            r.addPart('td', content=newTag('span', content=aname+adim, id=':'.join([my_name, aname])))
 
             r.addPart('td', content=descr, attributes={"style":'padding-left:2em; font-family:Liberation Serif;'})
             rows.append(r)

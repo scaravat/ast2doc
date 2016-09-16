@@ -25,7 +25,7 @@ hr {
 /* highlight the target of a link */
 div:target {
     color: black;
-    border: 2px solid red;
+    border: 3px solid #4c9ed9;
 }
 *:target {
     color: red;
@@ -173,6 +173,11 @@ a.other_symbol {
 a.optional_argument {
     color: #5555FF;
     font-weight:normal;
+}
+span.highlighted_argument {
+    background-color:#4c9ed9;
+    color: white;
+    font-weight: bold;
 }
 
 ul.nobullet {
