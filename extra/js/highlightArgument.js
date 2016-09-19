@@ -1,4 +1,4 @@
-function highlightArgument (symbolName, anchorArgName) {
+function highlightArgument (anchorArgName) {
 
     // eventually clear other highlighted items
     currentlyHighlighted = window.document.getElementsByClassName("highlighted_argument");
@@ -12,7 +12,7 @@ function highlightArgument (symbolName, anchorArgName) {
     }
 
     // now highlight the element we're interested in
-    elementToHighlight = window.document.getElementById(symbolName.concat(":", anchorArgName));
+    elementToHighlight = window.document.getElementById(anchorArgName);
     elementToHighlight.setAttribute("class", "highlighted_argument");
 
 }
