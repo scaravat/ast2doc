@@ -285,7 +285,7 @@ def render_specifics_compact(sp, sp_symmap, symmap, referenced_private_syms, my_
 
         if a['attrs_str']:
             last.addPiece(',')
-            attrs = newTag('div', content=a['attrs_str'], attributes={"style":'padding-left:1ex;'}, newlines=False)
+            attrs = newTag('div', content=', '.join(a['attrs']), attributes={"style":'padding-left:1ex;'}, newlines=False)
             content = attrs
         else:
             content = ''
