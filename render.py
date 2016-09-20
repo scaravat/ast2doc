@@ -210,7 +210,9 @@ def render_interface(iname, ast, rel_path, ast_dir, specifics, sym_lookup_table,
     name_span = newTag('span', content=my_name, attributes={"class":"symname"})
     src_link = newTag('a', content=name_span, attributes={"href":ext_href, "target":'_blank'})
     header = newTag('h4', content=['Generic procedure ', src_link, top_link])
-    my_body = newTag('div', content=[Comment(comment), header, specifics], attributes={"class":'box', "style":'overflow-x:auto;'}, id=my_name)
+    descr = sym_lookup_table[mod_name]['symbols_descr'][iname]
+    descr_p = newTag('p', content=descr[0] if descr else missing_description)
+    my_body = newTag('div', content=[Comment(comment), header, descr_p, specifics], attributes={"class":'box', "style":'overflow-x:auto;'}, id=my_name)
 
     return my_body
 
@@ -875,7 +877,7 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table
 
             # the last ring in chain gives this (owner_module, remote_sym)
             descr = sym_lookup_table[owner_module.upper()]['symbols_descr'][remote_sym.upper()]
-            descr_div = newTag('div', content=descr if descr else missing_description, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
+            descr_div = newTag('div', content=descr[0] if descr else missing_description, attributes={"class":'ellipsed', "style":'padding-left:5px;'})
 
             sym_divs.append( newTag('div', content=[forwarded_sym, descr_div], attributes={"style":'font-family:monospace; padding:1ex; background-color:'+bg_color}) )
 

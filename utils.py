@@ -12,12 +12,12 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     my_name = ast['name']
     if(my_name in sym_lookup_table):
         return
+    if verbose(): print '%sCaching: "%s"' % ('  '*level, my_name)
 
+    # init
     my_own_pubs = []
     my_sym_map = {}
     my_sym_cat = {}
-    my_sym_descr = {}
-    if verbose(): print '%sCaching: "%s"' % ('  '*level, my_name)
 
     # consider its own symbols, by category
     if 'publics' in ast:
@@ -28,12 +28,14 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
 
             # publics
             for sym in names.intersection(my_pubs):
+                my_sym_map[sym] = ':'.join(['__HERE__', sym])
+                my_sym_cat[sym] = cat
                 my_own_pubs.append(sym)
-                commit_symbol_inplace(ast[cat][names_list.index(sym)], sym, cat, '__HERE__', my_sym_map, my_sym_cat, my_sym_descr)
 
             # private symbols as well
             for sym in names.difference(my_pubs):
-                commit_symbol_inplace(ast[cat][names_list.index(sym)], sym, cat, '__PRIV__', my_sym_map, my_sym_cat, my_sym_descr)
+                my_sym_map[sym] = ':'.join(['__PRIV__', sym])
+                my_sym_cat[sym] = cat
 
     else:
         my_pubs = []
@@ -64,6 +66,8 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
 
     symbols_forwarded = process_forwarded(my_name, my_pubs, umap, my_sym_map, sym_lookup_table)
 
+    my_sym_descr = prefetch_descriptions(my_pubs, ast, sym_lookup_table, my_sym_map, my_sym_cat)
+
     sym_lookup_table[my_name] = {
         'description':ast['descr'],
         'symbols_map':my_sym_map,
@@ -75,14 +79,52 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
     }
 
 #=============================================================================
-def commit_symbol_inplace(sym_ast, sym, cat, tag, my_sym_map, my_sym_cat, my_sym_descr):
-    my_sym_map[sym] = ':'.join([tag, sym])
-    my_sym_cat[sym] = cat
-    if 'descr' in sym_ast:
-        my_sym_descr[sym] = sym_ast['descr']
-    else:
-        my_sym_descr[sym] = []
-        assert(cat in ('variables', 'interfaces'))
+def prefetch_descriptions(my_pubs, ast, sym_lookup_table, my_sym_map, my_sym_cat):
+
+    # init
+    my_sym_descr = dict( (sym, []) for sym in my_pubs )
+
+    for sym in my_pubs:
+        cat = my_sym_cat[sym]
+        owner_module, external_symbol = my_sym_map[sym].split(':')
+        if owner_module == '__HERE__':
+            sym_ast = next( (item for item in ast[cat] if item['name']==sym), None )
+            assert(sym_ast)
+
+            if 'descr' in sym_ast:
+                my_sym_descr[sym] = sym_ast['descr']
+
+            elif cat=='interfaces':
+                # try to get the interface description from its concrete procedures.
+                if sym_ast['task'] == 'overloading':
+                    concrete_descrs = set()
+                    for specific in sym_ast['procedures']:
+                        spec_mod, spec_sym = my_sym_map[specific].split(':')
+                        spec_cat = my_sym_cat[specific]
+                        assert(spec_cat in ('functions', 'subroutines'))
+
+                        if (spec_mod in ('__HERE__', '__PRIV__')):
+                            f = next( (item for item in ast[spec_cat] if item['name']==specific), None )
+                            assert(f)
+                            if f['descr']:
+                                concrete_descrs.add(f['descr'][0])
+
+                        else:
+                            descr = sym_lookup_table[spec_mod]['symbols_descr'][spec_sym]
+                            if descr:
+                                concrete_descrs.add(descr[0])
+
+                    if (len(concrete_descrs)==1):
+                        my_sym_descr[sym].append(concrete_descrs.pop())
+
+            else:
+                # parameters & other module vars are still left without a \brief
+                assert(cat == 'variables')
+
+        else:
+            my_sym_descr[sym] = sym_lookup_table[owner_module]['symbols_descr'][external_symbol]
+
+    return my_sym_descr
 
 #=============================================================================
 def get_sym_map(mod_name, mod_map, syms):
