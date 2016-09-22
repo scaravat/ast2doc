@@ -229,9 +229,12 @@ ul.navlist li {
     float: left;
     border-right: 2px solid white;
 }
-ul.navlist li:nth-last-child(2) {
+ul.navlist li:nth-last-child(3) {
     float: right;
     border-right: none;
+}
+ul.navlist li:nth-last-child(2) {
+    float: right;
 }
 ul.navlist li:last-child {
     float: right;
