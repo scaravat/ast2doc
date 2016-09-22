@@ -37,8 +37,10 @@ def main():
 
     # build a packages tree
     packages = scan_packages(src_dir)
-    dump_packages_json(packages, out_dir)
     src_tree = build_tree(packages)
+
+    # dump packages in JSON
+    dump_packages_json(packages, out_dir)
 
     # module/symbol usage statistics
     statistics = usage_statistics(sym_lookup_table, packages)
@@ -142,14 +144,19 @@ def get_api(wanted_api, ast_dir, sym_lookup_table):
 #=============================================================================
 def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_lookup_table):
 
-    src_root = os.path.normpath(os.path.commonprefix(packages.keys()))
-
+    # init
     modules_lists = {'__ALL__':[], '__API__':[]}
     modules_description = {}
     privates_referenced = {}
+
+    # scan packages
+    src_root = os.path.normpath(os.path.commonprefix(packages.keys()))
     for d, p in packages.iteritems():
+        # d: dir hosting a PACKAGE file, p: basically the eval()uation of that PACKAGE file
         rel_path = os.path.relpath(d, src_root)
         modules_lists[rel_path] = []
+
+        # scan PACKAGE-owned module files (the 'files' key is contributed by the scan_packages() function)
         for f in p['files']:
             mod_name = f.rsplit(".", 1)[0]
             ast_file = os.path.join(ast_dir, mod_name + ".ast")
@@ -157,15 +164,20 @@ def document_all_modules(packages, ast_dir, output_dir, api, wanted_module, sym_
                 ast = utils.read_ast(ast_file)
                 if(ast['tag'] == 'module' and (wanted_module=='__ALL__' or wanted_module==mod_name)):
                     if(utils.verbose()): print '>>>> Module: %s [%s]' % (mod_name, rel_path)
+
+                    # lists of modules per PACKAGE, needed by the landing page
                     modules_lists[rel_path].append(mod_name)
                     modules_lists['__ALL__'].append(mod_name)
-                    modules_description[mod_name] = ast['descr'][0] if ast['descr'] else missing_description # Only 1st \brief is retained here
                     if(mod_name.upper() in api['modules_map']):
                         modules_lists['__API__'].append(mod_name)
+                    modules_description[mod_name] = ast['descr'][0] if ast['descr'] else missing_description # Only 1st \brief is retained here
+
+                    # dump the current module HTML documentation
                     body, my_privates_referenced = render_module(ast, rel_path, ast_dir, output_dir, sym_lookup_table)
                     printout(body, output_dir, mod_name=mod_name, jscript=['packages_modules.json', 'js/common.js', 'js/updateURL.js', 'js/highlightArgument.js'])
                     if my_privates_referenced:
                         privates_referenced[mod_name.upper()] = my_privates_referenced
+
     return modules_lists, modules_description, privates_referenced
 
 #=============================================================================
