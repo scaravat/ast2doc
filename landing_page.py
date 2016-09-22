@@ -138,12 +138,17 @@ def get_banner(indices, prefix):
         link = newTag('a', content=button_name, id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
         buttons.append( newTag('li', content=link) )
 
-    # last two buttons are swapped since they're right-flushed!
+    # last few buttons are swapped since they're right-flushed!
+    #   if new items are added here: update accordingly styles.css [ul.navlist li:nth-last-child(XX)]!
     #  .. about
     target_href, my_title = print_about_page(prefix)
-    basename = target_href.rsplit('.',1)[0]
-    button_id = 'button_' + basename
+    button_id = 'button_' + target_href.rsplit('.',1)[0]
     link = newTag('a', content="About", id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
+    buttons.append( newTag('li', content=link) )
+    #  .. google custom search
+    target_href, my_title = print_gcse_page(prefix)
+    button_id = 'button_' + target_href.rsplit('.',1)[0]
+    link = newTag('a', content="Custom search", id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
     buttons.append( newTag('li', content=link) )
     #  .. quick search
     link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
@@ -211,6 +216,31 @@ def print_landingPage(prefix, src_tree, packages, modules_lists, modules_descrip
         "cols":"20%,80%", "title":"Documentation frame", "onload":"top.loadFrames()"})
 
     printout(outer_frameset, prefix, title=title, output_file="index", jscript=["modules_publics.json", "privates_referenced.json", "js/searchURL.js"])
+
+#=============================================================================
+def print_gcse_page(prefix):
+
+    title = 'Custom search'
+    body_parts = [newTag('h3', content=title, attributes={"class":'index_title'})]
+
+    # search box
+   #inner_div = newTag('div', content="", attributes={"class":"gcse-searchbox"})
+    inner_div = newTag('gcse:searchbox', content="")
+    outer_div = newTag('div', content=inner_div, id="searchbox-container", attributes={"style":"width:600px;"})
+    body_parts.append(outer_div)
+
+    # search results
+   #inner_div = newTag('div', content="", attributes={"class":"gcse-searchresults", "data-linkTarget":"moduleFrame"})
+    inner_div = newTag('gcse:searchresults', content="", attributes={"linkTarget":"moduleFrame"})
+    outer_div = newTag('div', content=inner_div, id="searchresults-container", attributes={"style":"min-height:100px;"})
+    body_parts.append(outer_div)
+
+    fileBaseName = 'custom_search'
+    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
+    gcse_code = "000324016156316545387:r519rvudrhy"
+    gcse_link = "https://cse.google.com/cse.js?cx=" + gcse_code
+    printout(body, prefix, title=title, output_file=fileBaseName, jscript=["js/active.js", gcse_link])
+    return fileBaseName+'.html', title
 
 #=============================================================================
 import time
