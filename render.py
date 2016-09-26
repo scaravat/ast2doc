@@ -1002,7 +1002,7 @@ def make_external_url(rel_path, **kwargs):
     return url
 
 #===============================================================================
-def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None):
+def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None, html_class=None):
 
     # HTML heading
     head = newTag('head')
@@ -1028,6 +1028,8 @@ def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=
 
     # main page
     html = newTag('html', content=[head, body])
+    if (html_class):
+        html.addAttribute("class", html_class)
     stuff = ["<!DOCTYPE html>", html.make(tab='  ')]
     f = open(filename(output_file, prefix=prefix), 'w' )
     f.write('\n'.join(stuff))

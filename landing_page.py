@@ -54,7 +54,6 @@ def print_packageOverview(prefix, pkgname, encoded_pkgname, descr, modules_list,
         link = newTag('a', content=module, attributes={"href":module+".html", "target":'moduleFrame'})
         mod_dt = newTag('dt', content=link, attributes={"style":"padding-top:0.5em;"}, newlines=False)
         mod_descr = newTag('dd', content=modules_description[module])
-       #items.append(newTag('li', content=[link, ' &#8212; ', mod_descr]))
         items.extend([mod_dt, mod_descr])
     modules_dl = newTag('dl', content=items)
     body = newTag('body', content=[heading, description, modules_dl])
@@ -135,22 +134,10 @@ def get_banner(indices, prefix):
         button_name = indices.brief[i]
         button_id = 'button_' + basename
         target_href = basename + ".html"
-        link = newTag('a', content=button_name, id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
+        link = newTag('a', content=button_name, id=button_id, attributes={"href":target_href, "target":"moduleFrame", "title":my_title})
         buttons.append( newTag('li', content=link) )
 
-    # last few buttons are swapped since they're right-flushed!
-    #   if new items are added here: update accordingly styles.css [ul.navlist li:nth-last-child(XX)]!
-    #  .. about
-    target_href, my_title = print_about_page(prefix)
-    button_id = 'button_' + target_href.rsplit('.',1)[0]
-    link = newTag('a', content="About", id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
-    buttons.append( newTag('li', content=link) )
-    #  .. google custom search
-    target_href, my_title = print_gcse_page(prefix)
-    button_id = 'button_' + target_href.rsplit('.',1)[0]
-    link = newTag('a', content="Custom search", id=button_id, attributes={"href":target_href, "target":"OverviewFrame", "title":my_title})
-    buttons.append( newTag('li', content=link) )
-    #  .. quick search
+    #  .. quick search (last button handled here since is not actually a html document)
     link = newTag('a', content="Quick search", attributes={"href":"javascript:showhide('qsearch_dropdown')", "class":"dropbtn"})
     form_items = [
         newTag('input', attributes={"type":"text", "name":"whois", "placeholder":"e.g.: dbcsr_filter", "class":"qsearch_text"}), newTag('br'),
@@ -170,26 +157,57 @@ def get_banner(indices, prefix):
     return banner
 
 #=============================================================================
+def activate_item_inplace(active_item_index, banner):
+
+    # banner ___ header (h1)
+    #       \
+    #        \__ buttons_list (ul) ___ button (li) ___ link (a)
+
+    buttons_list = banner.pieces[1]
+    for i, button in enumerate(buttons_list.pieces):
+        link = button.pieces[0]
+        if i == active_item_index:
+            link.attributes["class"] = "active"
+        else:
+            dummy = link.attributes.pop("class", None)
+
+#=============================================================================
+def commit_banner_dump_indices(banner, indices, prefix):
+
+    # loop over buttons (indices)
+    for i, index_id in enumerate(indices.l2sort):
+        activate_item_inplace(i, banner)
+        my_body = indices.bodies[i]
+        my_body.addAttribute("class", "landing_page_content")
+        title = getattr(indices, index_id)
+        body = newTag('body', content=[banner, my_body], attributes={
+            "class":"landing_page",
+            "onload":"javascript:setContentSize()",
+            "onresize":"javascript:setContentSize()"
+        })
+        printout(body, prefix, title=title, output_file=index_id, jscript=["js/showhide.js", "js/setContentSize.js"], html_class="landing_page")
+
+#=============================================================================
 def print_overview(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
 
     my_indices = IofIndices()
-    my_indices.Append( 'Tree', *print_logical_tree_index('__ALL__', prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table) )
-    my_indices.Append( 'Index', *print_alphabetic(modules_lists['__ALL__'], modules_description, prefix, 'all') )
-    my_indices.Append( 'Most used', *print_mostly_used(statistics, modules_description, prefix) )
-   #my_indices.Append( 'DBCSR tree', *print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages) )
-    my_indices.Append( 'DBCSR modules', *print_alphabetic(modules_lists['__API__'], modules_description, prefix, 'DBCSR API') )
-    initial_index_index = 0
+    # left flushed items  ---  TODO: another item: alphabetic index of DBCSR API symbols? shortcut to dbcsr_api.html?
+    my_indices.Append( 'Tree',          *print_logical_tree_index('__ALL__', src_tree, modules_lists, modules_description, prefix, packages, sym_lookup_table) )
+    my_indices.Append( 'Index',         *print_alphabetic        (modules_lists['__ALL__'],           modules_description, prefix, 'all') )
+    my_indices.Append( 'Most used',     *print_mostly_used       (statistics,                         modules_description, prefix) )
+    my_indices.Append( 'DBCSR modules', *print_alphabetic        (modules_lists['__API__'],           modules_description, prefix, 'DBCSR API') )
+    # right flushed items (last few buttons are swapped since they're right-flushed! if new items here: update accordingly styles.css [ul.navlist li:nth-last-child(XX)]!
+    my_indices.Append( 'About',         *print_about_page(prefix) )
+    my_indices.Append( 'Custom search', *print_gcse_page(prefix) )
 
+    # prepare the header & navigation bar
     banner = get_banner(my_indices, prefix)
-    noframe = newTag('p', content="Your browser does not support iframes.")
-    index_iframe = newTag('iframe', content=noframe, id="OverviewFrame",
-        attributes={"src":my_indices.l2sort[initial_index_index]+".html", "name":"OverviewFrame", "class":'wideautoheight'}
-    )
-    body = newTag('body', content=[banner, index_iframe])
 
-    fileBaseName = "overview-summary"
-    printout(body, prefix, title="Overview", output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
-    return fileBaseName+'.html'
+    # insert the banner into all the landing page tabs and dump them
+    commit_banner_dump_indices(banner, my_indices, prefix)
+
+    initial_index = 0
+    return my_indices.l2sort[initial_index]+".html"
 
 #=============================================================================
 def print_landingPage(prefix, src_tree, packages, modules_lists, modules_description, statistics, api, sym_lookup_table):
@@ -224,23 +242,21 @@ def print_gcse_page(prefix):
     body_parts = [newTag('h3', content=title, attributes={"class":'index_title'})]
 
     # search box
-   #inner_div = newTag('div', content="", attributes={"class":"gcse-searchbox"})
     inner_div = newTag('gcse:searchbox', content="")
     outer_div = newTag('div', content=inner_div, id="searchbox-container", attributes={"style":"width:600px;"})
     body_parts.append(outer_div)
 
     # search results
-   #inner_div = newTag('div', content="", attributes={"class":"gcse-searchresults", "data-linkTarget":"moduleFrame"})
     inner_div = newTag('gcse:searchresults', content="", attributes={"linkTarget":"moduleFrame"})
     outer_div = newTag('div', content=inner_div, id="searchresults-container", attributes={"style":"min-height:100px;"})
     body_parts.append(outer_div)
 
     fileBaseName = 'custom_search'
-    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
     gcse_code = "000324016156316545387:r519rvudrhy"
     gcse_link = "https://cse.google.com/cse.js?cx=" + gcse_code
-    printout(body, prefix, title=title, output_file=fileBaseName, jscript=["js/active.js", gcse_link])
-    return fileBaseName+'.html', title
+    body_parts.append( newTag('script', content="", attributes={"src":gcse_link, "type":"text/javascript"}) )
+    body = newTag('div', content=body_parts)
+    return fileBaseName+'.html', title, body
 
 #=============================================================================
 import time
@@ -267,9 +283,8 @@ def print_about_page(prefix):
     body_parts.append(time_info)
 
     fileBaseName = 'about'
-    body = newTag('body', content=body_parts, attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-    printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
-    return fileBaseName+'.html', title
+    body = newTag('div', content=body_parts)
+    return fileBaseName+'.html', title, body
 
 #=============================================================================
 def get_mostly_used(statistics, modules_description, top_howmany, title_prefix):
@@ -349,9 +364,8 @@ def print_mostly_used(statistics, modules_description, prefix):
     title = "Most used modules/symbols statistics"
     heading = newTag('h2', content=title, attributes={"class":'index_title'})
     fileBaseName = 'mostly_used'
-    body = newTag('body', content=[heading, table], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-    printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
-    return fileBaseName+'.html', title
+    body = newTag('div', content=[heading, table])
+    return fileBaseName+'.html', title, body
 
 #=============================================================================
 def get_package_stuff(modules_lists, modules_description, packages, pkg_path='__ROOT__'):
@@ -374,7 +388,7 @@ def get_package_stuff(modules_lists, modules_description, packages, pkg_path='__
     return [node_button, ' &#8212; ', description, modules_container]
 
 #=============================================================================
-def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_description, packages, sym_lookup_table=None, fmt='html'):
+def print_logical_tree_index(api, src_tree, modules_lists, modules_description, prefix, packages, sym_lookup_table=None, fmt='html'):
 
     if api == '__ALL__':
         title = 'Logical tree of ALL packages'
@@ -392,13 +406,12 @@ def print_logical_tree_index(api, prefix, src_tree, modules_lists, modules_descr
 
         fileBaseName = "tree_index" if api == '__ALL__' else "API_tree_index"
         outer_list = newTag('ul', content=root_item, attributes={"class":'nobullet'})
-        body = newTag('body', content=[heading, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-        printout(body, prefix, title=title, output_file=fileBaseName, jscript=["js/active.js", "js/showhide.js"])
+        body = newTag('div', content=[heading, outer_list])
 
     else:
         assert(False) # Unknown format
 
-    return fileBaseName+".html", title
+    return fileBaseName+".html", title, body
 
 #=============================================================================
 def get_tree(api, tree, modules_lists, modules_description, packages, sym_lookup_table, rootnode=None):
@@ -481,64 +494,12 @@ def print_alphabetic(mod_list, modules_description, prefix, descr, fmt='html'):
         outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
 
         fileBaseName = "alphabetic_index_"+'_'.join(descr.split())
-        body = newTag('body', content=[heading, ini_list, outer_list], attributes={"onload":"javascript:setActive('"+fileBaseName+"')"})
-        printout(body, prefix, title=title, output_file=fileBaseName, jscript="js/active.js")
+        body = newTag('div', content=[heading, ini_list, outer_list])
 
     else:
         assert(False) # Unknown format
 
-    return fileBaseName+".html", title
-
-#=============================================================================
-def print_alphabetic_index_(api, prefix, fmt='html'):
-    symbols_list = sorted(api['symbols_map'].keys())
-    initials = sorted(set(sym[0] for sym in symbols_list))
-    symbols_dict = dict((ini, [sym for sym in symbols_list if sym.startswith(ini)]) for ini in initials)
-
-    title = 'Alphabetic index of DBCSR API symbols'
-
-    if(fmt=='html'):
-
-        heading = newTag('h1', content=title, attributes={"class":'index_title'})
-
-        # initials
-        items = []
-        for ini in initials:
-            link = newTag('a', content=ini, attributes={"href":'#'+ini})
-            item = newTag('li', content=link)
-            items.append(item)
-        ini_list = newTag('ul', content=items, id="initials", attributes={"class":'menu'})
-
-        items = []
-        for ini in initials:
-
-            inner_items = []
-            for sym in symbols_dict[ini]:
-                sym_name = sym.lower()
-                owner_module, ext_sym_name = api['symbols_map'][sym].lower().split(':')
-                href = filename(owner_module, hashtag=ext_sym_name)
-                link = newTag('a', content=sym_name, attributes={"href":href})
-                inner_item = newTag('li', content=link)
-                inner_items.append(inner_item)
-
-            inner_list = newTag('ul', content=inner_items)
-            columns = newTag('div', content=inner_list, attributes={"class":'columns'})
-            back_link = newTag('a', content=ini, attributes={"href":'#initials'})
-            head = newTag('h4', content=back_link, id=ini)
-            item = newTag('li', content=[head, columns])
-            items.append(item)
-        outer_list = newTag('ul', content=items, attributes={"class":'nobullet'})
-
-        body_parts = [heading, ini_list, outer_list]
-        body = newTag('body', content=body_parts)
-
-        fn = "alphabetic_index"
-        printout(body, prefix, title=title, output_file=fn)
-
-    else:
-        assert(False) # Unknown format
-
-    return fn+".html", title
+    return fileBaseName+".html", title, body
 
 #=============================================================================
 def print_disambiguationPage(symbols_db, modules_description, prefix):
@@ -572,10 +533,11 @@ class IofIndices():
     def __init__(self, fmt='html'):
         self.l2sort = []
         self.brief  = []
+        self.bodies = []
         self.fmt = fmt
         self.dname = None
 
-    def Append(self, brief, fn, t):
+    def Append(self, brief, fn, t, body):
         assert(fn.endswith('.' + self.fmt))
         dname = path.dirname(fn)
         if(self.dname):
@@ -587,5 +549,6 @@ class IofIndices():
         setattr(self, k, t)
         self.l2sort.append(k)
         self.brief.append(brief)
+        self.bodies.append(body)
 
 #EOF

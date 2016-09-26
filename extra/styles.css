@@ -209,6 +209,7 @@ ul.modules_in_package li a.active {
     margin: 5px;
     text-decoration: none;
     border-radius: 4px 4px 0 0;
+    width: 2ex;
 }
 .horizontal {
     padding: 15px;
@@ -386,18 +387,21 @@ img.logo {
     border:0;
 }
 
-div.wideautoheightbanner {
-    position: absolute;
-    top:    0px;
-    width:  99%;
-    height: 16%; /* the `height' */
+html.landing_page, body.landing_page {
+  margin: 0px;
+  height: 100%;
+  overflow-y: hidden;
 }
-iframe.wideautoheight {
-    position: absolute;
-    top:    16%; /* is the `height' of the above class */
-    width:  99%;
-    height: 84%; /* 100% - top */
-    border: none;
+div.landing_page_content {
+  margin-left: 8px;
+  margin-right: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+div.wideautoheightbanner {
+    margin-left: 8px;
+    margin-right: 8px;
+    height: 112px;
 }
 
 .clearfix {
