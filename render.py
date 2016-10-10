@@ -12,6 +12,13 @@ ruler = newTag('hr')
 back_to_top_char = newTag('b', content="^", attributes={"class":'back_to_top'})
 top_link = newTag('div', content=newTag('a', content=back_to_top_char, attributes={"href":"#", "title":"[back to top]"}), attributes={"class":"toplink"})
 
+jquery_url = "https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"
+jquery_function = '\n\
+$(document).ready(function(){\n\
+    var modname = "%s";\n\
+    $("#wikibox").load("https://www.cp2k.org/static/embed_wiki.php?page=apidoc:"+modname);\n\
+});\n'
+
 #=============================================================================
 #   M O D U L E   (main rendering function)
 #=============================================================================
@@ -50,6 +57,9 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     href = make_external_url(rel_path, file_name=my_file)
     src_link = newTag("a", attributes={"href":href, "target":'_blank', "class":"external_href_nourl"}, content=my_file)
     body_parts.extend(['source:', src_link, ruler])
+
+    # ...wikibox
+    body_parts.append(newTag('div', content="Loading...", id="wikibox")) #, attributes={"class":"wikibox"}))
 
     # init the queue of refereced private symbols to be printed
     referenced_private_syms = {"TYPES":[], "PARAMS":[]}
@@ -1002,7 +1012,7 @@ def make_external_url(rel_path, **kwargs):
     return url
 
 #===============================================================================
-def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None, html_class=None):
+def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=None, html_class=None, custom_script=None):
 
     # HTML heading
     head = newTag('head')
@@ -1025,6 +1035,10 @@ def printout(body, prefix, mod_name=None, title=None, output_file=None, jscript=
                 head.addPart('script', content='', attributes={"type":"text/javascript", "src":script})
         else:
             assert(False)
+
+    # custom script
+    if custom_script:
+        head.addPart('script', content=custom_script)
 
     # main page
     html = newTag('html', content=[head, body])
