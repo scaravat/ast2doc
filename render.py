@@ -59,7 +59,7 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     body_parts.extend(['source:', src_link, ruler])
 
     # ...wikibox
-    body_parts.append(newTag('div', content="Loading...", id="wikibox")) #, attributes={"class":"wikibox"}))
+    body_parts.append(newTag('div', content="Loading...", id="wikibox"))
 
     # init the queue of refereced private symbols to be printed
     referenced_private_syms = {"TYPES":[], "PARAMS":[]}
