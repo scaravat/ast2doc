@@ -434,7 +434,7 @@ def get_tree(api, tree, modules_lists, modules_description, packages, sym_lookup
                 if mod_name in sym_lookup_table:
                     my_mmap = {}
                     for k, v in sym_lookup_table[mod_name]['symbols_map'].iteritems():
-                        ext_module, external_sym_name = v.split(':')
+                        ext_module, external_sym_name = v.split(':',1)
                         if(ext_module == '__HERE__'): # no forwarded symbols here...
                             assert(k == external_sym_name)
                             my_mmap[k] = k

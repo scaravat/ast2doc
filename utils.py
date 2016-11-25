@@ -42,7 +42,7 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
 
     # consider the USE statements
     uses_map = modules_symbols(ast['uses'])
-    umap = map_symbol_to_module(ast['uses'])
+    umap = map_symbol_to_module(ast['uses'], ast['multiple_imports'])
     for module, imported_syms in uses_map.iteritems():
 
         if module in external_modules:
@@ -61,8 +61,8 @@ def cache_symbol_lookup(ast, ast_dir, sym_lookup_table, level=-1):
             imported_module_map = sym_lookup_table[module]
             next_sym_map, next_sym_cat = get_sym_map(module, imported_module_map, imported_syms)
 
-            my_sym_map.update(next_sym_map)
-            my_sym_cat.update(next_sym_cat)
+            update_symmap_inplace(my_sym_cat, my_sym_map,
+                                  next_sym_map, next_sym_cat, ast['multiple_imports'])
 
     symbols_forwarded = process_forwarded(my_name, my_pubs, umap, my_sym_map, sym_lookup_table)
 
@@ -86,7 +86,9 @@ def prefetch_descriptions(my_pubs, ast, sym_lookup_table, my_sym_map, my_sym_cat
 
     for sym in my_pubs:
         cat = my_sym_cat[sym]
-        owner_module, external_symbol = my_sym_map[sym].split(':')
+        assert(sym in my_sym_map)
+        owner_module, external_symbol = my_sym_map[sym].split(':',1)
+
         if owner_module == '__HERE__':
             sym_ast = next( (item for item in ast[cat] if item['name']==sym), None )
             assert(sym_ast)
@@ -112,6 +114,7 @@ def prefetch_descriptions(my_pubs, ast, sym_lookup_table, my_sym_map, my_sym_cat
                         else:
                             descr = sym_lookup_table[spec_mod]['symbols_descr'][spec_sym]
                             if descr:
+                                # Retain only the 1st \brief found, if any
                                 concrete_descrs.add(descr[0])
 
                     if (len(concrete_descrs)==1):
@@ -120,6 +123,18 @@ def prefetch_descriptions(my_pubs, ast, sym_lookup_table, my_sym_map, my_sym_cat
             else:
                 # parameters & other module vars are still left without a \brief
                 assert(cat == 'variables')
+
+        elif owner_module == '__MULTI__':
+            assert(cat=='interfaces')
+            concrete_descrs = set()
+            for specific in eval(external_symbol):
+                spec_mod, spec_sym = specific.split(':')
+                assert(sym_lookup_table[spec_mod]['symbols_cat'][spec_sym]=='interfaces')
+                descr = sym_lookup_table[spec_mod]['symbols_descr'][spec_sym]
+                if descr:
+                    concrete_descrs.add(descr[0])
+            if (len(concrete_descrs)==1):
+                my_sym_descr[sym].append(concrete_descrs.pop())
 
         else:
             my_sym_descr[sym] = sym_lookup_table[owner_module]['symbols_descr'][external_symbol]
@@ -146,20 +161,37 @@ def get_sym_map(mod_name, mod_map, syms):
     return out_map, out_cat
 
 #=============================================================================
+def update_symmap_inplace(sym_cat, sym_map, next_sym_map, next_sym_cat, multiple_imports):
+    for k, v in next_sym_map.iteritems():
+        sym_cat[k] = next_sym_cat[k]
+        if k in multiple_imports:
+            assert(v in multiple_imports[k] and next_sym_cat[k] in ('interfaces', 'variables'))
+            if not k in sym_map:
+                sym_map[k] = "__MULTI__:%r" % multiple_imports[k]
+        else:
+            sym_map[k] = v
+
+#=============================================================================
 def process_forwarded(mod_name, pubnames, umap, symmap, sym_lookup_table):
 
     fwd = {}
     for sym in pubnames:
 
         if not sym in external_symbols:
+
             if(not sym in symmap):
                 raise Exception('MOD: "%s", SYM: "%s"'%(mod_name, sym))
-            m, s = symmap[sym].split(':',1)
-            if m != '__HERE__':
 
+            assert(isinstance(symmap[sym], basestring))
+            m, s = symmap[sym].split(':',1)
+            if m == '__MULTI__':
+                # The story ends here! (s is a string!)
+                assert sorted(umap[sym])==sorted(eval(s))
+            elif m != '__HERE__':
                 chain = trace_symbol(sym, umap, symmap, sym_lookup_table)
                 assert(chain[-1] == symmap[sym])
                 if len(chain)>1:
+                    # store the trace only when there are more than one step!
                     fwd[sym] = chain
 
     return fwd
@@ -168,14 +200,13 @@ def process_forwarded(mod_name, pubnames, umap, symmap, sym_lookup_table):
 def trace_symbol(sym, umap, symmap, sym_lookup_table):
     assert(sym in umap)
 
-    usym = umap[sym]
-    chain = [usym]
-    if usym != symmap[sym]:
-        used_module, sym_therein = usym.split(':',1)
-
-        next_umap   = sym_lookup_table[used_module]['umap']
-        next_symmap = sym_lookup_table[used_module]['symbols_map']
-        chain.extend( trace_symbol(sym_therein, next_umap, next_symmap, sym_lookup_table) )
+    for usym in umap[sym]:
+        chain = [usym]
+        if usym != symmap[sym]:
+            used_module, sym_therein = usym.split(':',1)
+            next_umap   = sym_lookup_table[used_module]['umap']
+            next_symmap = sym_lookup_table[used_module]['symbols_map']
+            chain.extend( trace_symbol(sym_therein, next_umap, next_symmap, sym_lookup_table) )
 
     return chain
 
@@ -202,18 +233,19 @@ def reverse_sym_map(symbols_map):
     return mmap
 
 #=============================================================================
-def map_symbol_to_module(uses):
+def map_symbol_to_module(uses, multiple_imports):
     """ Convert the 'uses' ast key content (a list of dictionaries)
         to a dictionary with:
         - keys: internal symbol name
         - values: strings of the form "owner_module:external_symbol_name"."""
-    d = []
+    d = {}
     for u in uses:
         module = u['from']
         if('only' in u):
             symbols = u['only']
-            d.extend( zip(symbols.keys(), [':'.join([module, external_sym]) for external_sym in symbols.values()]) )
-    return(dict(d))
+            d.update( dict(zip(symbols.keys(), [[':'.join([module, external_sym])] for external_sym in symbols.values()])) )
+    d.update(multiple_imports)
+    return(d)
 
 #===============================================================================
 def read_ast(fn_in, wanted=None, category=None, do_doxycheck=True):

@@ -69,7 +69,8 @@ def render_module(ast, rel_path, ast_dir, prefix, sym_lookup_table):
     # ...forwarded symbols
     forwarded = my_publics.difference(pars, types, intfs, functs_names)
     if forwarded:
-        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'], sym_lookup_table, ast['uses'])
+        fwded_symbols = render_forwarded(forwarded, my_symbols_map, sym_lookup_table[mod_name]['symbols_forwarded'],
+                                         sym_lookup_table, ast['uses'], ast['multiple_imports'])
         if fwded_symbols:
             body_parts.append(fwded_symbols)
 
@@ -330,11 +331,14 @@ def import_specifics(specifics, ast, ast_dir, sym_lookup_table):
 
             # copy the symmap (and tweak it when it contains symbols local to the imported module!)
             for key, val in sym_lookup_table[module]['symbols_map'].iteritems():
-                m, ext_s = val.split(':')
+                assert(not key in symmap)
+                m, ext_s = val.split(':',1)
                 if m == '__HERE__':
                     symmap[key] = ':'.join([module, ext_s])
                 elif m in ('__PRIV__', '__REFERENCED_PRIV__'):
                     pass
+                elif m == '__MULTI__':
+                    symmap[key] = val
                 else:
                     assert(not re.match('__\w+__', m))
                     symmap[key] = val
@@ -512,7 +516,6 @@ def render_routine(subr, module_symmap, referenced_private_syms, rel_path, ast_d
         comment += " RESULT(%s)"%my_retval['name'].lower()
 
     if subr['uses']:
-        # TODO: tweak cache_symbol_lookup to process also these USEs statements
         my_sym_lookup_table = {}
         utils.cache_symbol_lookup(subr, ast_dir, my_sym_lookup_table)
         internal_symmap = my_sym_lookup_table[subr['name']]['symbols_map']
@@ -849,17 +852,25 @@ def render_external(prefix):
         printout(body, prefix, title=ext_module, output_file=ext_module)
 
 #===============================================================================
-def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table, uses):
+def render_forwarded(forwarded, my_symbols_map, my_forwardings,
+                     sym_lookup_table, uses, multiple_imports):
 
     # precalculate the symbols to be printed
     sym_list = sorted([sym for sym in forwarded if not sym in utils.external_symbols])
 
     # precalculate external modules involved
-    sym_to_mod = utils.map_symbol_to_module(uses)
+    sym_to_mod = utils.map_symbol_to_module(uses, multiple_imports)
     todolist = {}
     for sym in sym_list:
-        imported_module, remote_sym = sym_to_mod[sym].split(':')
-        todolist.setdefault(imported_module, []).append(sym)
+        assert isinstance(sym_to_mod[sym], list)
+        if len(sym_to_mod[sym])==1:
+            imported_module, remote_sym = sym_to_mod[sym][0].split(':')
+            todolist.setdefault(imported_module, []).append(sym)
+        else:
+            assert sym in multiple_imports
+            for target in sym_to_mod[sym]:
+                imported_module, remote_sym = target.split(':')
+                todolist.setdefault(imported_module, []).append(sym)
     if not todolist:
         return
     used_modules = [u['from'].lower() for u in uses if 'only' in u and u['from'] in todolist]
@@ -870,19 +881,26 @@ def render_forwarded(forwarded, my_symbols_map, my_forwardings, sym_lookup_table
         sym_divs = []
         for sym in todolist[imported_module.upper()]:
 
-            # my_forwardings is used only when multiple steps are needed to reach the original location of the symbol
-            chain = my_forwardings[sym] if sym in my_forwardings else [my_symbols_map[sym]]
-            import_steps = []
-            for ring in chain:
-                owner_module, remote_sym = ring.lower().split(':')
-                href = filename(owner_module, hashtag=remote_sym)
-                link = newTag('a', content='::'.join([owner_module, remote_sym]), attributes={"href":href})
-                import_steps.append( newTag('div', content=[' &RightArrow; ', link], attributes={"style":'padding-left:1em; display:inline-block;'}) )
-
             bg_color  = '#f2f2f2' if yes else 'white'
             yes = not yes
             sym_name = sym.lower()
             sym_span = newTag('span', content=sym_name, id=sym_name, attributes={"style":'font-weight:bold;'})
+            assert (sym in my_symbols_map)
+            # my_forwardings is used only when multiple steps are needed to reach the original location of the symbol
+            chain = my_forwardings[sym] if sym in my_forwardings else [my_symbols_map[sym]]
+            import_steps = []
+            for ring in chain:
+                owner_module, remote_sym = ring.lower().split(':',1)
+                if owner_module.upper()=='__MULTI__':
+                    # only one ring(step) is allowed here!
+                    assert(len(chain)==1)
+                    assert(":".join([imported_module, sym_name]).upper() in multiple_imports[sym])
+                    owner_module, remote_sym = imported_module, sym_name
+                assert(not re.match('__\w+__',owner_module))
+                href = filename(owner_module, hashtag=remote_sym)
+                link = newTag('a', content='::'.join([owner_module, remote_sym]), attributes={"href":href})
+                import_steps.append( newTag('div', content=[' &RightArrow; ', link], attributes={"style":'padding-left:1em; display:inline-block;'}) )
+
             forwarded_sym  = newTag('div', content=[sym_span]+import_steps, newlines=False, attributes={"style":'padding:5px;'})
 
             # the last ring in chain gives this (owner_module, remote_sym)

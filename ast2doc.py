@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, json
+from re import match
 import utils
 from landing_page import print_landingPage, print_disambiguationPage, encode_package_name
 from render import printout, render_module, render_external, missing_description, jquery_url, jquery_function
@@ -71,8 +72,17 @@ def usage_statistics(sym_lookup_table, packages):
         symmap = sym_lookup_table[module]['symbols_map']
         my_used_modules = set()
         for sym, smap in symmap.iteritems():
-            ext_mod, ext_sym = smap.split(':')
-            if(not ext_mod in ('__PRIV__', '__HERE__', '__EXTERNAL__')):
+            ext_mod, ext_sym = smap.split(':',1)
+            if(ext_mod in ('__PRIV__', '__HERE__', '__EXTERNAL__')):
+                pass
+            elif(ext_mod=="__MULTI__"):
+                for item in eval(ext_sym):
+                    m = item.split(':')[0]
+                    my_used_modules.add(m)
+                    counter['__SYMBOLS__'].setdefault(item, 0)
+                    counter['__SYMBOLS__'][item] += 1
+            else:
+                if(match('__\w+__', ext_mod)): raise Exception('Unexpected EXT_MOD: "%s"' % ext_mod)
                 my_used_modules.add(ext_mod)
                 counter['__SYMBOLS__'].setdefault(smap, 0)
                 counter['__SYMBOLS__'][smap] += 1
