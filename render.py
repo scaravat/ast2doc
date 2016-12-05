@@ -665,7 +665,7 @@ def render_parameters(paramts, my_symbols_map, referenced_private_syms, hint='PA
             td = newTag('td', content=v_type, attributes={"class":'vtype'})
             row = newTag('tr', content=td, attributes={"class":'alternating'})
             if last_attr:
-                assert(last_attr in ('POINTER', 'TARGET', 'ALLOCATABLE'))
+                assert(last_attr in ('POINTER', 'TARGET', 'ALLOCATABLE', 'PROTECTED'))
                 assert(hint!='PARAMETER')
                 assert(not attrs)
                 v_type.addPiece(',')
